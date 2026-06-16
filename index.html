@@ -1890,7 +1890,16 @@ function renderPMFinder(){
       });
       if(pmDays.length>0){
         const wcSwap=S.swaps.find(function(sw){ return sw.wc===fmtDate(wc)&&sw.scope==='week'; });
-        weekResults.push({wc:wc,wcStr:fmtDate(wc),link:link,days:days,pmDays:pmDays,weekSwapped:!!wcSwap,swapTo:wcSwap?wcSwap.linkReceived:null,wcSwapId:wcSwap?wcSwap.id:null});
+        // Build leaveMap: dayIndex → leave type, for any day in this week covered by planned leave
+        const leaveMap={};
+        for(var li=0;li<7;li++){
+          const dayDate=addDays(wc,li);
+          const dayDs=fmtDate(dayDate);
+          const lv=(S.plannedLeave||[]).find(function(l){ return dayDs>=l.start&&dayDs<=(l.end||l.start); });
+          if(lv) leaveMap[li]=lv.type;
+        }
+        const pmLeave=pmDays.some(function(pd){ return leaveMap[pd.dayIdx]; });
+        weekResults.push({wc:wc,wcStr:fmtDate(wc),link:link,days:days,pmDays:pmDays,weekSwapped:!!wcSwap,swapTo:wcSwap?wcSwap.linkReceived:null,wcSwapId:wcSwap?wcSwap.id:null,leaveMap:leaveMap,pmLeave:pmLeave});
       }
     }
     cur=addDays(cur,7);
@@ -1928,14 +1937,18 @@ function renderPMFinder(){
 
     const headerDiv=document.createElement('div');
     headerDiv.style.cssText='display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px;';
+    const leaveHeaderBadge=r.pmLeave
+      ?'<span style="font-size:10px;padding:2px 6px;border-radius:8px;background:#7f1d1d;color:#fca5a5;font-weight:700;">🏖 Leave on PM day</span>'
+      :'';
     headerDiv.innerHTML=
       '<div style="font-size:14px;font-weight:800;color:var(--accent);">WC '+wcDD+'</div>'+
       '<div style="font-size:12px;font-weight:700;color:var(--text);">Link '+r.link+'</div>'+
       statusHtml+
+      leaveHeaderBadge+
       markEmailBtn;
 
     const gridDiv=document.createElement('div');
-    gridDiv.innerHTML=buildWeekGridHtml(r.link,r.days,r.wc);
+    gridDiv.innerHTML=buildWeekGridHtml(r.link,r.days,r.wc,r.leaveMap);
 
     row.appendChild(headerDiv);
     row.appendChild(gridDiv);
@@ -1943,7 +1956,8 @@ function renderPMFinder(){
   });
 }
 
-function buildWeekGridHtml(link, days, wc){
+function buildWeekGridHtml(link, days, wc, leaveMap){
+  leaveMap=leaveMap||{};
   var html='<div class="sg-scroll"><table class="swap-grid">';
   html+='<thead><tr><th style="text-align:left;width:50px;font-size:9px;">Link</th>';
   DAY3.forEach(function(d,i){
@@ -1965,7 +1979,17 @@ function buildWeekGridHtml(link, days, wc){
     var isPM=(['pm1','pm2','pm3'].includes(tk))||(mins!==null&&mins>=720&&tk==='normal');
     if(isPM) cls+=' sg-diff';
     var lbl=sh.time?sh.time:sh.code;
-    html+='<td><span class="'+cls+'">'+lbl+'</span></td>';
+    // Planned leave badge for this day
+    var leaveBadge='';
+    if(leaveMap[i]){
+      var lvLabels={al:'AL',sl:'SL',lsl:'LSL'};
+      var lvColors={al:'#dc2626',sl:'#7c3aed',lsl:'#0d9488'};
+      var lvType=leaveMap[i];
+      var lvLbl=lvLabels[lvType]||lvType.toUpperCase();
+      var lvCol=lvColors[lvType]||'#6b7280';
+      leaveBadge='<div style="font-size:8px;font-weight:800;color:'+lvCol+';margin-top:2px;line-height:1;">'+lvLbl+'</div>';
+    }
+    html+='<td><span class="'+cls+'">'+lbl+'</span>'+leaveBadge+'</td>';
   });
   html+='</tr></tbody></table></div>';
   return html;
