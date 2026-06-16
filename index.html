@@ -529,12 +529,19 @@ document.getElementById('pwa-manifest').setAttribute('href', manifestURL);
 <div id="screen-contacts" class="screen">
   <div class="screen-header">
     <div class="screen-title">Contacts</div>
-    <div style="display:flex;gap:6px;">
-      <button class="btn btn-sm" onclick="document.getElementById('contact-csv').click()">⬆ Import</button>
-      <input type="file" id="contact-csv" accept=".csv,.xlsx" style="display:none" onchange="importContacts(this)">
-      <button class="btn btn-sm btn-accent" onclick="openContactModal()">+ Add</button>
-    </div>
+    <button class="btn btn-sm btn-accent" onclick="openContactModal()">+ Add</button>
   </div>
+
+  <!-- Three separate import buttons — each hardcoded to its tab -->
+  <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+    <button class="btn btn-sm" onclick="document.getElementById('csv-guards').click()">⬆ Import Guards</button>
+    <input type="file" id="csv-guards" accept=".csv" style="display:none" onchange="importContactsToSection(this,'guards')">
+    <button class="btn btn-sm" onclick="document.getElementById('csv-drivers').click()">⬆ Import Drivers</button>
+    <input type="file" id="csv-drivers" accept=".csv" style="display:none" onchange="importContactsToSection(this,'drivers')">
+    <button class="btn btn-sm" onclick="document.getElementById('csv-qr').click()">⬆ Import QR Nos</button>
+    <input type="file" id="csv-qr" accept=".csv" style="display:none" onchange="importContactsToSection(this,'qr')">
+  </div>
+
   <div class="search-bar">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <input type="search" id="contact-search" placeholder="Search contacts…" oninput="renderContacts()">
@@ -1011,6 +1018,8 @@ function loadState(){
       if(p.settings) Object.assign(S.settings, p.settings);
       if(p.leave) Object.assign(S.leave, p.leave);
       if(p.stats) S.stats = p.stats;
+      if(p.plannedLeave) S.plannedLeave = p.plannedLeave;
+      if(p.swapEmailSent) S.swapEmailSent = p.swapEmailSent;
     }
   }catch(e){}
   purgeBin();
@@ -2503,31 +2512,20 @@ function saveContact(){
   saveState(); closeContactModal(); renderContacts(); toast('Contact saved');
 }
 
-function importContacts(input){
+function importContactsToSection(input, section){
   const file=input.files[0]; if(!file) return;
-
-  // Section determined ONLY from filename — ignore any column in the CSV
-  const fname=file.name.toLowerCase().replace(/[_\-]/g,' ');
-  let section='guards'; // safe default
-  if(fname.includes('driver')) section='drivers';
-  else if(fname.includes('qr')||fname.includes('number')) section='qr';
-  else if(fname.includes('guard')) section='guards';
-
   const r=new FileReader();
   r.onload=function(e){
     const text=e.target.result;
     const lines=text.split('\n').filter(function(l){ return l.trim(); });
     if(!lines.length){ toast('File is empty'); return; }
     let imported=0;
-
-    // Skip header row if first cell looks like a label (contains letters, not a name we'd want)
+    // Skip header row if first cell looks like a label
     const firstCell=(lines[0].split(',')[0]||'').replace(/"/g,'').trim().toLowerCase();
-    const isHeader=['name','full name','contact','guard','driver','number'].includes(firstCell);
+    const isHeader=['name','full name','contact','guard','driver','number','phone'].includes(firstCell);
     const dataLines=isHeader?lines.slice(1):lines;
-
     dataLines.forEach(function(line){
       if(!line.trim()) return;
-      // Handle quoted CSV fields
       const cols=line.split(',').map(function(c){ return c.replace(/^"|"$/g,'').trim(); });
       const name=cols[0]; const phone=cols[1]||'';
       if(!name) return;
@@ -2538,10 +2536,10 @@ function importContacts(input){
         imported++;
       }
     });
-
     saveState(); renderContacts();
     input.value='';
-    toast(imported+' contacts imported into '+section);
+    const labels={guards:'Guards',drivers:'Drivers',qr:'QR Numbers'};
+    toast(imported+' contacts imported into '+labels[section]);
   };
   r.readAsText(file);
 }
