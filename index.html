@@ -539,10 +539,18 @@ document.getElementById('pwa-manifest').setAttribute('href', manifestURL);
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <input type="search" id="contact-search" placeholder="Search contacts…" oninput="renderContacts()">
   </div>
-  <div class="tab-row">
-    <button class="tab-btn active" onclick="setContactTab('guards',this)">Guards</button>
-    <button class="tab-btn" onclick="setContactTab('drivers',this)">Drivers</button>
-    <button class="tab-btn" onclick="setContactTab('qr',this)">QR Nos</button>
+  <div class="tab-row" id="contact-tab-row">
+    <button class="tab-btn active" id="ctab-guards" onclick="setContactTab('guards',this)">Guards</button>
+    <button class="tab-btn" id="ctab-drivers" onclick="setContactTab('drivers',this)">Drivers</button>
+    <button class="tab-btn" id="ctab-qr" onclick="setContactTab('qr',this)">QR Nos</button>
+  </div>
+  <!-- Select toolbar — shown when contacts exist -->
+  <div id="contact-select-toolbar" style="display:none;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;">
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;cursor:pointer;">
+      <input type="checkbox" id="contact-select-all" onchange="toggleSelectAll(this)" style="width:16px;height:16px;cursor:pointer;">
+      Select All
+    </label>
+    <button class="btn btn-danger btn-sm" id="contact-delete-selected" style="display:none;" onclick="deleteSelectedContacts()">Delete Selected</button>
   </div>
   <div id="contacts-list"></div>
 </div>
@@ -2327,28 +2335,108 @@ function setContactTab(t,el){
 function renderContacts(){
   const q=(document.getElementById('contact-search').value||'').toLowerCase();
   const el=document.getElementById('contacts-list');
-  let list=S.contacts.filter(c=>c.section===contactTab);
-  if(q) list=list.filter(c=>c.name.toLowerCase().includes(q)||(c.phone||'').includes(q));
-  list=[...list].sort((a,b)=>a.name.localeCompare(b.name));
+
+  // Update tab counts for all three sections
+  ['guards','drivers','qr'].forEach(function(sec){
+    const btn=document.getElementById('ctab-'+sec);
+    if(!btn) return;
+    const count=S.contacts.filter(function(c){ return c.section===sec; }).length;
+    const labels={guards:'Guards',drivers:'Drivers',qr:'QR Nos'};
+    btn.textContent=labels[sec]+(count>0?' ('+count+')':'');
+  });
+
+  // Filter + sort for current tab
+  let list=S.contacts.filter(function(c){ return c.section===contactTab; });
+  if(q) list=list.filter(function(c){ return c.name.toLowerCase().includes(q)||(c.phone||'').includes(q); });
+  list=[...list].sort(function(a,b){ return a.name.localeCompare(b.name); });
+
+  // Show/hide select toolbar
+  const toolbar=document.getElementById('contact-select-toolbar');
+  toolbar.style.display=list.length?'flex':'none';
+
+  // Reset select-all checkbox and delete button
+  const selectAll=document.getElementById('contact-select-all');
+  if(selectAll) selectAll.checked=false;
+  const delBtn=document.getElementById('contact-delete-selected');
+  if(delBtn) delBtn.style.display='none';
+
   if(!list.length){ el.innerHTML='<div class="empty-state">No contacts here.</div>'; return; }
+
   el.innerHTML='';
-  list.forEach(c=>{
+  list.forEach(function(c){
     const div=document.createElement('div');
     div.className='contact-item';
-    div.onclick=()=>openContactModal(c.id);
+    div.style.cssText='display:flex;align-items:center;gap:10px;';
+    div.dataset.cid=c.id;
+
+    // Checkbox
+    const cb=document.createElement('input');
+    cb.type='checkbox';
+    cb.className='contact-cb';
+    cb.style.cssText='width:18px;height:18px;flex-shrink:0;cursor:pointer;';
+    cb.dataset.cid=c.id;
+    cb.addEventListener('change',function(){ onContactCheckChange(); });
+    div.appendChild(cb);
+
+    // Main content (tappable for edit)
+    const content=document.createElement('div');
+    content.style.cssText='flex:1;min-width:0;';
+    content.style.cursor='pointer';
+    content.onclick=function(){ openContactModal(c.id); };
+
     const phoneActions=c.phone?
-      '<div class="contact-actions">'+
+      '<div class="contact-actions" style="margin-top:4px;">'+
         '<a class="contact-action-btn" href="tel:'+c.phone+'">📞 Call</a>'+
         '<a class="contact-action-btn" href="sms:'+c.phone+'">💬 Text</a>'+
       '</div>':'';
-    div.innerHTML='<div>'+
+
+    content.innerHTML=
       '<div class="contact-name">'+c.name+'</div>'+
       (c.phone?'<div class="contact-phone">'+c.phone+'</div>':'')+
-      phoneActions+
-      '</div>'+
-      '<svg style="width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg>';
+      phoneActions;
+
+    div.appendChild(content);
+
+    // Chevron
+    const chev=document.createElement('div');
+    chev.innerHTML='<svg style="width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg>';
+    chev.style.cursor='pointer';
+    chev.onclick=function(){ openContactModal(c.id); };
+    div.appendChild(chev);
+
     el.appendChild(div);
   });
+}
+
+function onContactCheckChange(){
+  const cbs=document.querySelectorAll('.contact-cb');
+  const checked=document.querySelectorAll('.contact-cb:checked');
+  const selectAll=document.getElementById('contact-select-all');
+  const delBtn=document.getElementById('contact-delete-selected');
+  if(selectAll) selectAll.checked=checked.length===cbs.length&&cbs.length>0;
+  if(delBtn){
+    delBtn.style.display=checked.length>0?'':'none';
+    delBtn.textContent='Delete Selected ('+checked.length+')';
+  }
+}
+
+function toggleSelectAll(cb){
+  document.querySelectorAll('.contact-cb').forEach(function(c){ c.checked=cb.checked; });
+  onContactCheckChange();
+}
+
+function deleteSelectedContacts(){
+  const checked=document.querySelectorAll('.contact-cb:checked');
+  if(!checked.length) return;
+  const ids=Array.from(checked).map(function(cb){ return cb.dataset.cid; });
+  if(!confirm('Delete '+ids.length+' contact'+(ids.length>1?'s':'')+' ?')) return;
+  ids.forEach(function(id){
+    const contact=S.contacts.find(function(c){ return c.id===id; });
+    if(contact) S.bin.push({id:uid(),kind:'contact',data:contact,deletedAt:new Date().toISOString()});
+  });
+  S.contacts=S.contacts.filter(function(c){ return !ids.includes(c.id); });
+  saveState(); renderContacts();
+  toast(ids.length+' contact'+(ids.length>1?'s':'')+' deleted');
 }
 
 function openContactModal(id){
