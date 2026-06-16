@@ -1890,16 +1890,7 @@ function renderPMFinder(){
       });
       if(pmDays.length>0){
         const wcSwap=S.swaps.find(function(sw){ return sw.wc===fmtDate(wc)&&sw.scope==='week'; });
-        // Build leaveMap: dayIndex → leave type, for any day in this week covered by planned leave
-        const leaveMap={};
-        for(var li=0;li<7;li++){
-          const dayDate=addDays(wc,li);
-          const dayDs=fmtDate(dayDate);
-          const lv=(S.plannedLeave||[]).find(function(l){ return dayDs>=l.start&&dayDs<=(l.end||l.start); });
-          if(lv) leaveMap[li]=lv.type;
-        }
-        const pmLeave=pmDays.some(function(pd){ return leaveMap[pd.dayIdx]; });
-        weekResults.push({wc:wc,wcStr:fmtDate(wc),link:link,days:days,pmDays:pmDays,weekSwapped:!!wcSwap,swapTo:wcSwap?wcSwap.linkReceived:null,wcSwapId:wcSwap?wcSwap.id:null,leaveMap:leaveMap,pmLeave:pmLeave});
+        weekResults.push({wc:wc,wcStr:fmtDate(wc),link:link,days:days,pmDays:pmDays,weekSwapped:!!wcSwap,swapTo:wcSwap?wcSwap.linkReceived:null,wcSwapId:wcSwap?wcSwap.id:null});
       }
     }
     cur=addDays(cur,7);
@@ -1937,18 +1928,14 @@ function renderPMFinder(){
 
     const headerDiv=document.createElement('div');
     headerDiv.style.cssText='display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px;';
-    const leaveHeaderBadge=r.pmLeave
-      ?'<span style="font-size:10px;padding:2px 6px;border-radius:8px;background:#7f1d1d;color:#fca5a5;font-weight:700;">🏖 Leave on PM day</span>'
-      :'';
     headerDiv.innerHTML=
       '<div style="font-size:14px;font-weight:800;color:var(--accent);">WC '+wcDD+'</div>'+
       '<div style="font-size:12px;font-weight:700;color:var(--text);">Link '+r.link+'</div>'+
       statusHtml+
-      leaveHeaderBadge+
       markEmailBtn;
 
     const gridDiv=document.createElement('div');
-    gridDiv.innerHTML=buildWeekGridHtml(r.link,r.days,r.wc,r.leaveMap);
+    gridDiv.innerHTML=buildWeekGridHtml(r.link,r.days,r.wc);
 
     row.appendChild(headerDiv);
     row.appendChild(gridDiv);
@@ -1956,8 +1943,7 @@ function renderPMFinder(){
   });
 }
 
-function buildWeekGridHtml(link, days, wc, leaveMap){
-  leaveMap=leaveMap||{};
+function buildWeekGridHtml(link, days, wc){
   var html='<div class="sg-scroll"><table class="swap-grid">';
   html+='<thead><tr><th style="text-align:left;width:50px;font-size:9px;">Link</th>';
   DAY3.forEach(function(d,i){
@@ -1979,17 +1965,7 @@ function buildWeekGridHtml(link, days, wc, leaveMap){
     var isPM=(['pm1','pm2','pm3'].includes(tk))||(mins!==null&&mins>=720&&tk==='normal');
     if(isPM) cls+=' sg-diff';
     var lbl=sh.time?sh.time:sh.code;
-    // Planned leave badge for this day
-    var leaveBadge='';
-    if(leaveMap[i]){
-      var lvLabels={al:'AL',sl:'SL',lsl:'LSL'};
-      var lvColors={al:'#dc2626',sl:'#7c3aed',lsl:'#0d9488'};
-      var lvType=leaveMap[i];
-      var lvLbl=lvLabels[lvType]||lvType.toUpperCase();
-      var lvCol=lvColors[lvType]||'#6b7280';
-      leaveBadge='<div style="font-size:8px;font-weight:800;color:'+lvCol+';margin-top:2px;line-height:1;">'+lvLbl+'</div>';
-    }
-    html+='<td><span class="'+cls+'">'+lbl+'</span>'+leaveBadge+'</td>';
+    html+='<td><span class="'+cls+'">'+lbl+'</span></td>';
   });
   html+='</tr></tbody></table></div>';
   return html;
@@ -2403,23 +2379,54 @@ function saveContact(){
 
 function importContacts(input){
   const file=input.files[0]; if(!file) return;
+
+  // Detect section from filename as fallback
+  // e.g. "guards.csv", "drivers.csv", "qr numbers.csv"
+  const fname=file.name.toLowerCase();
+  let sectionFromFile='guards';
+  if(fname.includes('driver')) sectionFromFile='drivers';
+  else if(fname.includes('qr')||fname.includes('number')) sectionFromFile='qr';
+  else if(fname.includes('guard')) sectionFromFile='guards';
+
   const r=new FileReader();
   r.onload=function(e){
     const text=e.target.result;
     const lines=text.split('\n').filter(function(l){ return l.trim(); });
     let imported=0;
-    lines.slice(1).forEach(function(line){
+
+    // Check if first row is a header (contains non-numeric text in col 0)
+    // Skip header row
+    const dataLines=lines[0]&&isNaN(lines[0].split(',')[0].replace(/"/g,'').trim())
+      &&lines[0].toLowerCase().includes('name')
+      ?lines.slice(1):lines;
+
+    dataLines.forEach(function(line){
+      if(!line.trim()) return;
       const cols=line.split(',').map(function(c){ return c.replace(/^"|"$/g,'').trim(); });
       if(!cols[0]) return;
-      const section=(cols[2]||'guards').toLowerCase();
-      const validSection=['guards','drivers','qr'].includes(section)?section:'guards';
-      // Check for conflict
-      const existing=S.contacts.find(function(c){ return c.name.toLowerCase()===cols[0].toLowerCase(); });
+
+      // Determine section: check col[2] first, fall back to filename detection
+      const rawSection=(cols[2]||'').toLowerCase().trim();
+      let validSection=sectionFromFile; // default from filename
+
+      if(rawSection){
+        // Broaden matching to accept common variations
+        if(['guard','guards'].includes(rawSection)) validSection='guards';
+        else if(['driver','drivers'].includes(rawSection)) validSection='drivers';
+        else if(['qr','qr number','qr numbers','number','numbers'].includes(rawSection)) validSection='qr';
+        // If rawSection is unrecognised, fall back to filename detection
+      }
+
+      // Check for name conflict — skip duplicates
+      const existing=S.contacts.find(function(c){
+        return c.name.toLowerCase()===cols[0].toLowerCase();
+      });
       if(!existing){
         S.contacts.push({id:uid(),name:cols[0],phone:cols[1]||'',section:validSection});
         imported++;
       }
     });
+
     saveState(); renderContacts();
     input.value='';
     toast(imported+' contacts imported');
