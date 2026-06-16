@@ -980,6 +980,22 @@ let S = {
   swapEmailSent: {}
 };
 
+function fixContactSections(){
+  // Normalise any bad section values saved by previous import logic
+  const guardVariants=['guard','guards'];
+  const driverVariants=['driver','drivers'];
+  const qrVariants=['qr','qr number','qr numbers','number','numbers','qrnumbers','qrnumber'];
+  let fixed=0;
+  S.contacts.forEach(function(c){
+    const s=(c.section||'').toLowerCase().trim();
+    if(guardVariants.includes(s)&&c.section!=='guards'){ c.section='guards'; fixed++; }
+    else if(driverVariants.includes(s)&&c.section!=='drivers'){ c.section='drivers'; fixed++; }
+    else if(qrVariants.includes(s)&&c.section!=='qr'){ c.section='qr'; fixed++; }
+    else if(!['guards','drivers','qr'].includes(s)){ c.section='guards'; fixed++; } // unknown → guards
+  });
+  if(fixed>0){ saveState(); console.log('Fixed '+fixed+' contact sections'); }
+}
+
 function loadState(){
   try{
     const raw = localStorage.getItem(STATE_KEY);
@@ -998,6 +1014,7 @@ function loadState(){
     }
   }catch(e){}
   purgeBin();
+  fixContactSections();
 }
 function saveState(){
   try{ localStorage.setItem(STATE_KEY, JSON.stringify(S)); }catch(e){}
@@ -2429,14 +2446,35 @@ function deleteSelectedContacts(){
   const checked=document.querySelectorAll('.contact-cb:checked');
   if(!checked.length) return;
   const ids=Array.from(checked).map(function(cb){ return cb.dataset.cid; });
-  if(!confirm('Delete '+ids.length+' contact'+(ids.length>1?'s':'')+' ?')) return;
-  ids.forEach(function(id){
-    const contact=S.contacts.find(function(c){ return c.id===id; });
-    if(contact) S.bin.push({id:uid(),kind:'contact',data:contact,deletedAt:new Date().toISOString()});
-  });
-  S.contacts=S.contacts.filter(function(c){ return !ids.includes(c.id); });
-  saveState(); renderContacts();
-  toast(ids.length+' contact'+(ids.length>1?'s':'')+' deleted');
+
+  // Android PWA blocks confirm() — use inline confirmation instead
+  const delBtn=document.getElementById('contact-delete-selected');
+  if(delBtn.dataset.confirming==='yes'){
+    // Second tap — confirmed, do the delete
+    delBtn.dataset.confirming='';
+    ids.forEach(function(id){
+      const contact=S.contacts.find(function(c){ return c.id===id; });
+      if(contact) S.bin.push({id:uid(),kind:'contact',data:contact,deletedAt:new Date().toISOString()});
+    });
+    S.contacts=S.contacts.filter(function(c){ return !ids.includes(c.id); });
+    saveState(); renderContacts();
+    toast(ids.length+' contact'+(ids.length>1?'s':'')+' deleted');
+  } else {
+    // First tap — ask for confirmation
+    delBtn.dataset.confirming='yes';
+    delBtn.textContent='Tap again to confirm delete ('+ids.length+')';
+    delBtn.style.background='#ef4444';
+    delBtn.style.color='#fff';
+    // Auto-reset after 4 seconds if not confirmed
+    setTimeout(function(){
+      if(delBtn.dataset.confirming==='yes'){
+        delBtn.dataset.confirming='';
+        delBtn.textContent='Delete Selected ('+ids.length+')';
+        delBtn.style.background='';
+        delBtn.style.color='';
+      }
+    },4000);
+  }
 }
 
 function openContactModal(id){
@@ -2468,56 +2506,42 @@ function saveContact(){
 function importContacts(input){
   const file=input.files[0]; if(!file) return;
 
-  // Detect section from filename as fallback
-  // e.g. "guards.csv", "drivers.csv", "qr numbers.csv"
-  const fname=file.name.toLowerCase();
-  let sectionFromFile='guards';
-  if(fname.includes('driver')) sectionFromFile='drivers';
-  else if(fname.includes('qr')||fname.includes('number')) sectionFromFile='qr';
-  else if(fname.includes('guard')) sectionFromFile='guards';
+  // Section determined ONLY from filename — ignore any column in the CSV
+  const fname=file.name.toLowerCase().replace(/[_\-]/g,' ');
+  let section='guards'; // safe default
+  if(fname.includes('driver')) section='drivers';
+  else if(fname.includes('qr')||fname.includes('number')) section='qr';
+  else if(fname.includes('guard')) section='guards';
 
   const r=new FileReader();
   r.onload=function(e){
     const text=e.target.result;
     const lines=text.split('\n').filter(function(l){ return l.trim(); });
+    if(!lines.length){ toast('File is empty'); return; }
     let imported=0;
 
-    // Check if first row is a header (contains non-numeric text in col 0)
-    // Skip header row
-    const dataLines=lines[0]&&isNaN(lines[0].split(',')[0].replace(/"/g,'').trim())
-      &&lines[0].toLowerCase().includes('name')
-      ?lines.slice(1):lines;
+    // Skip header row if first cell looks like a label (contains letters, not a name we'd want)
+    const firstCell=(lines[0].split(',')[0]||'').replace(/"/g,'').trim().toLowerCase();
+    const isHeader=['name','full name','contact','guard','driver','number'].includes(firstCell);
+    const dataLines=isHeader?lines.slice(1):lines;
 
     dataLines.forEach(function(line){
       if(!line.trim()) return;
+      // Handle quoted CSV fields
       const cols=line.split(',').map(function(c){ return c.replace(/^"|"$/g,'').trim(); });
-      if(!cols[0]) return;
-
-      // Determine section: check col[2] first, fall back to filename detection
-      const rawSection=(cols[2]||'').toLowerCase().trim();
-      let validSection=sectionFromFile; // default from filename
-
-      if(rawSection){
-        // Broaden matching to accept common variations
-        if(['guard','guards'].includes(rawSection)) validSection='guards';
-        else if(['driver','drivers'].includes(rawSection)) validSection='drivers';
-        else if(['qr','qr number','qr numbers','number','numbers'].includes(rawSection)) validSection='qr';
-        // If rawSection is unrecognised, fall back to filename detection
-      }
-
-      // Check for name conflict — skip duplicates
-      const existing=S.contacts.find(function(c){
-        return c.name.toLowerCase()===cols[0].toLowerCase();
-      });
-      if(!existing){
-        S.contacts.push({id:uid(),name:cols[0],phone:cols[1]||'',section:validSection});
+      const name=cols[0]; const phone=cols[1]||'';
+      if(!name) return;
+      // Skip duplicates by name
+      const exists=S.contacts.find(function(c){ return c.name.toLowerCase()===name.toLowerCase(); });
+      if(!exists){
+        S.contacts.push({id:uid(),name:name,phone:phone,section:section});
         imported++;
       }
     });
 
     saveState(); renderContacts();
     input.value='';
-    toast(imported+' contacts imported');
+    toast(imported+' contacts imported into '+section);
   };
   r.readAsText(file);
 }
