@@ -168,7 +168,14 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 /* PM Finder */
 .pmf-year-btn{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;margin-right:6px;margin-bottom:6px;}
 .pmf-year-btn.active{background:var(--accent);color:#000;border-color:var(--accent);}
-.pmf-row{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.pmf-row{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;}
+.pmf-select-cb{width:16px;height:16px;cursor:pointer;flex-shrink:0;}
+.pmf-copy-bar{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;}
+.leave-adj-item{background:var(--surface2);border-radius:6px;padding:8px 10px;margin-bottom:6px;font-size:12px;}
+.leave-adj-type{font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;display:inline-block;margin-right:4px;}
+.adj-accrual{background:#064e3b;color:#6ee7b7;}
+.adj-payroll{background:#1e3a5f;color:#7dd3fc;}
+.adj-manual{background:#3b1f1f;color:#fca5a5;}
 /* ── CLAIMS ── */
 .claim-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;}
 .claim-type{font-size:13px;font-weight:700;}
@@ -351,6 +358,7 @@ document.getElementById('pwa-manifest').setAttribute('href', manifestURL);
     <div style="text-align:center;">
       <div class="cal-month-title" id="cal-title">—</div>
       <div style="font-size:10px;color:var(--muted);" id="cal-wc-info">—</div>
+  <div id="cal-pm-status" style="display:none;font-size:11px;font-weight:700;margin-top:2px;"></div>
     </div>
     <button class="btn btn-icon btn-sm" onclick="calNav(1)">&#8250;</button>
   </div>
@@ -430,12 +438,9 @@ document.getElementById('pwa-manifest').setAttribute('href', manifestURL);
       <div class="sg-scroll"><table class="swap-grid" id="sw-compare-table"></table></div>
     </div>
 
+    <div id="sw-blp-warn" style="display:none;margin-bottom:8px;padding:8px 10px;background:var(--surface2);border-radius:6px;font-size:11px;"></div>
     <button class="btn btn-accent btn-full" style="margin-top:4px;" onclick="saveSwapInline()">Record Swap</button>
   </div>
-
-  <!-- ── SWAP HISTORY ── -->
-  <div class="section-label">Swap History</div>
-  <div id="swap-log"></div>
 
   <hr class="divider">
 
@@ -451,8 +456,20 @@ document.getElementById('pwa-manifest').setAttribute('href', manifestURL);
         <option value="pm3">PM3 only (17:01–23:59)</option>
       </select>
     </div>
+    <!-- Copy bar -->
+    <div class="pmf-copy-bar">
+      <button class="btn btn-sm" onclick="copySelectedPMF()">📋 Copy Selected</button>
+      <button class="btn btn-sm" onclick="selectAllPMF()">Select All</button>
+      <button class="btn btn-sm" onclick="clearPMFSelection()">Clear</button>
+    </div>
     <div id="pmf-results"></div>
   </div>
+
+  <hr class="divider">
+
+  <!-- ── SWAP HISTORY (bottom) ── -->
+  <div class="section-label">Swap History</div>
+  <div id="swap-log"></div>
 </div>
 
 <!-- ═══════════════════════════════════════
@@ -506,6 +523,13 @@ document.getElementById('pwa-manifest').setAttribute('href', manifestURL);
     <button class="btn btn-sm btn-accent" onclick="openLeaveModal()">+ Add Leave</button>
   </div>
   <div id="planned-leave-list"></div>
+
+  <!-- Leave Balance Adjustments -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;margin-top:14px;">
+    <div class="section-label" style="margin:0;">Adjust Leave Balance</div>
+    <button class="btn btn-sm btn-accent" onclick="openLeaveAdjModal()">+ Adjust</button>
+  </div>
+  <div id="leave-adj-list"></div>
 
   <!-- Pay estimates -->
   <div class="section-label">Pay</div>
@@ -909,6 +933,55 @@ document.getElementById('pwa-manifest').setAttribute('href', manifestURL);
   </div>
 </div>
 
+<!-- Leave Adjustment Modal -->
+<div class="modal-overlay" id="leave-adj-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Adjust Leave Balance</div>
+    <div class="form-group">
+      <label class="form-label">Leave Type</label>
+      <select class="form-select" id="lam-leave-type">
+        <option value="al">Annual Leave</option>
+        <option value="lsl">Long Service Leave</option>
+        <option value="pc">Personal / Sick Leave</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Adjustment Type</label>
+      <select class="form-select" id="lam-type">
+        <option value="accrual">Accrual</option>
+        <option value="payroll">Payroll Adjustment</option>
+        <option value="manual">Manual Correction</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Direction</label>
+        <select class="form-select" id="lam-dir">
+          <option value="increase">+ Increase</option>
+          <option value="decrease">- Decrease</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Hours</label>
+        <input type="number" class="form-input" id="lam-hours" step="0.01" min="0" placeholder="e.g. 8.00">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Date</label>
+      <input type="date" class="form-input" id="lam-date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Reason</label>
+      <input type="text" class="form-input" id="lam-reason" placeholder="e.g. Leave taken 07/08-22/08">
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeLeaveAdjModal()">Cancel</button>
+      <button class="btn btn-accent" style="flex:1;" onclick="saveLeaveAdj()">Save Adjustment</button>
+    </div>
+  </div>
+</div>
+
 <!-- Leave Modal -->
 <div class="modal-overlay" id="leave-modal">
   <div class="modal">
@@ -984,7 +1057,8 @@ let S = {
   leave: { al:227.51, lsl:460.67, pc:12.36 },
   stats: {},
   plannedLeave: [],
-  swapEmailSent: {}
+  swapEmailSent: {},
+  leaveAdj: []   // [{id,leaveType,type,dir,hours,date,reason}]
 };
 
 function fixContactSections(){
@@ -1020,6 +1094,8 @@ function loadState(){
       if(p.stats) S.stats = p.stats;
       if(p.plannedLeave) S.plannedLeave = p.plannedLeave;
       if(p.swapEmailSent) S.swapEmailSent = p.swapEmailSent;
+      if(p.leaveAdj) S.leaveAdj = p.leaveAdj;
+      if(p.leaveAdjBase) S.leaveAdjBase = p.leaveAdjBase;
     }
   }catch(e){}
   purgeBin();
@@ -1200,16 +1276,20 @@ function renderDash(){
         const sent=S.swapEmailSent[sw.id];
         const countdown=daysLeft<=0?'<span style="color:#ef4444;font-weight:700;">Due Now!</span>':daysLeft===1?'<span style="color:var(--accent);">Tomorrow</span>':'<span class="swap-email-countdown">'+daysLeft+'</span> days remaining';
         return '<div class="swap-email-card" id="sec-'+sw.id+'">'+
-          '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;">'+
+          '<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Upcoming Swap</div>'+
+          '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">'+
             '<div>'+
-              '<div style="font-size:13px;font-weight:800;">'+(sw.driver||'Driver')+'</div>'+
-              '<div style="font-size:12px;color:var(--muted);">Link '+sw.linkReceived+' · W/C '+fmtDDMM(wcDate)+'</div>'+
+              '<div style="font-size:13px;font-weight:800;margin-bottom:2px;">W/C '+fmtDDMM(wcDate)+'</div>'+
+              '<div style="font-size:12px;margin-bottom:1px;">Your Link: <strong>'+sw.linkGiven+'</strong></div>'+
+              '<div style="font-size:12px;margin-bottom:1px;">Swapped To: <strong style="color:var(--accent2);">'+sw.linkReceived+'</strong></div>'+
+              (sw.driver?'<div style="font-size:12px;color:var(--muted);">'+sw.driver+'</div>':'')+
             '</div>'+
             (sent
-              ?'<span style="color:var(--early);font-weight:700;font-size:12px;">Email Sent ✓ <button class="btn btn-sm" style="margin-left:6px;font-size:10px;padding:3px 8px;" data-swapid="'+sw.id+'" onclick="undoSwapEmailSentById(this)">Undo</button></span>'
+              ?'<div style="text-align:right;"><span style="color:var(--early);font-weight:700;font-size:12px;">Email Sent ✓</span><br><button class="btn btn-sm" style="margin-top:4px;font-size:10px;padding:3px 8px;" data-swapid="'+sw.id+'" onclick="undoSwapEmailSentById(this)">Undo</button></div>'
               :'<button class="btn btn-sm btn-accent" data-swapid="'+sw.id+'" onclick="markSwapEmailSentById(this)">Mark Email Sent</button>')+
           '</div>'+
-          '<div style="font-size:12px;">Email due: '+fmtDDMM(emailDue)+' · '+countdown+'</div>'+
+          '<div style="font-size:12px;color:var(--muted);">Email due: '+fmtDDMM(emailDue)+' · '+countdown+'</div>'+
+          (sw.blpDiff!=null?'<div style="font-size:11px;color:'+(sw.blpDiff===0?'var(--early)':'var(--accent)')+';margin-top:4px;">'+(sw.blpDiff===0?'✓ BLP/SLP balanced':'⚠ BLP/SLP diff: '+(sw.blpDiff>0?'+':'')+sw.blpDiff+' (You: '+sw.myBlp+' · Them: '+sw.theirBlp+')')+'</div>':'')+
         '</div>';
       }).join('');
   } else {
@@ -1246,6 +1326,19 @@ function renderDash(){
     :'<div class="empty-state" style="padding:16px;">No alerts — all good! ✓</div>';
 
   updateClaimsBadge();
+}
+
+function openCalendarToWeek(mondayStr){
+  // Calculate month offset from today
+  const target=parseDate(mondayStr);
+  const now=today();
+  const diffMonths=(target.getFullYear()-now.getFullYear())*12+(target.getMonth()-now.getMonth());
+  calMonthOffset=diffMonths;
+  showScreen('cal');
+  // Activate cal tab
+  document.querySelectorAll('.bnav-item').forEach(function(b){ b.classList.remove('active'); });
+  const calNav=document.getElementById('nav-cal');
+  if(calNav) calNav.classList.add('active');
 }
 
 function markPMFEmail(btn){
@@ -1299,12 +1392,55 @@ function renderCal(){
   const ref=new Date(now.getFullYear(), now.getMonth()+calMonthOffset, 1);
   const yr=ref.getFullYear(), mo=ref.getMonth();
 
-  document.getElementById('cal-title').textContent=ref.toLocaleDateString('en-AU',{month:'long',year:'numeric'});
+  const monthNum=mo+1;
+  const monthName=ref.toLocaleDateString('en-AU',{month:'long'});
+  const yearNum=yr;
+  document.getElementById('cal-title').textContent=monthName+' ('+monthNum+') '+yearNum;
 
   const mon=getMonday(now);
   const link=getLinkForWeek(mon);
   document.getElementById('cal-link-badge').textContent=link||'?';
   document.getElementById('cal-wc-info').textContent=link?'Home Link '+HOME_LINK+' · This week: '+link:'Set link in Settings';
+
+  // PM swap status for this month
+  const pmStatusEl=document.getElementById('cal-pm-status');
+  if(pmStatusEl){
+    const nowD=today();
+    let pmFutureTotal=0, pmFutureUnswapped=0;
+    let curW=getMonday(new Date(yr,mo,1));
+    const monthEnd=new Date(yr,mo+1,0);
+    while(curW<=monthEnd){
+      const wLink=getLinkForWeek(curW);
+      if(wLink&&ROSTER[String(wLink)]){
+        const hasPM=ROSTER[String(wLink)].some(function(raw){
+          const sh=parseShift(raw);
+          if(['pm1','pm2','pm3'].includes(sh.typeKey)) return true;
+          const m=parseTime(sh.time); return m!==null&&m>=720;
+        });
+        if(hasPM){
+          // Only count future weeks
+          const wEnd=addDays(curW,6);
+          if(wEnd>=nowD){
+            pmFutureTotal++;
+            const isSwapped=S.swaps.some(function(sw){ return sw.wc===fmtDate(curW)&&sw.scope==='week'; });
+            if(!isSwapped) pmFutureUnswapped++;
+          }
+        }
+      }
+      curW=addDays(curW,7);
+    }
+    if(pmFutureTotal===0){
+      pmStatusEl.style.display='none';
+    } else if(pmFutureUnswapped===0){
+      pmStatusEl.style.display='block';
+      pmStatusEl.style.color='var(--early)';
+      pmStatusEl.textContent='All PM Weeks Swapped ✓';
+    } else {
+      pmStatusEl.style.display='block';
+      pmStatusEl.style.color='var(--accent)';
+      pmStatusEl.textContent=pmFutureUnswapped+' PM Week'+(pmFutureUnswapped>1?'s':'')+' Remaining To Swap';
+    }
+  }
 
   // Grid start = Monday of week containing 1st
   const first=new Date(yr,mo,1);
@@ -1333,13 +1469,15 @@ function renderCalCell(d, otherMonth){
   const isToday=ds===fmtDate(now);
   const isPH=QLD_PH.has(ds);
   const sh=getEffectiveShift(ds);
-  const hasOv=!!S.days[ds];
+  const ov0raw=S.days[ds];
+  const hasOv=!!ov0raw;
+  const isSwapOv=hasOv&&ov0raw.type==='swap';
   const tk=sh.typeKey;
 
   let cls='cal-cell';
   if(isToday) cls+=' today';
   if(otherMonth) cls+=' other-month';
-  if(hasOv) cls+=' modified';
+  if(isSwapOv) cls+=' modified'; // blue border only for swaps, not edits
   if(isPH) cls+=' c-ph';
 
   // Background colour class
@@ -1628,7 +1766,8 @@ function renderSwapLog(){
     const emailBadge=document.createElement('span');
     emailBadge.style.cssText='font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;'+(emailSent?'background:#064e3b;color:#6ee7b7;':'background:#78350f;color:#fcd34d;');
     emailBadge.textContent=emailSent?'Email Sent ✓':'Email Pending';
-    div.innerHTML+=emailBadge.outerHTML+
+    const blpInfo=sw.myBlp!=null?'<div style="font-size:10px;color:var(--muted);margin-top:3px;">BLP/SLP: You '+sw.myBlp+' · Them '+sw.theirBlp+(sw.blpDiff===0?' ✓':' ⚠ diff '+(sw.blpDiff>0?'+':'')+sw.blpDiff)+'</div>':'';
+    div.innerHTML+=emailBadge.outerHTML+blpInfo+
       '<button class="del-swap-btn" style="background:none;border:none;color:#ef4444;font-size:18px;cursor:pointer;padding:0 2px;">×</button>';
     div.querySelector('.del-swap-btn').onclick=()=>deleteSwap(sw.id);
     el.appendChild(div);
@@ -1825,6 +1964,20 @@ function onSwapLinkInput(){
   }
   html+='</tr></tbody>';
   tbl.innerHTML=html;
+  // BLP/SLP balance check
+  const myB=countBlpSlp(myLink);
+  const theirB=countBlpSlp(lnk);
+  const diff=theirB-myB;
+  const warnEl=document.getElementById('sw-blp-warn');
+  if(warnEl){
+    if(diff!==0){
+      warnEl.style.display='block';
+      warnEl.innerHTML='<span style="font-weight:700;color:var(--accent);">⚠ BLP/SLP Mismatch</span> — Your Link: '+myB+' · Swap Link: '+theirB+' · Diff: '+(diff>0?'+':'')+diff;
+    } else {
+      warnEl.style.display='block';
+      warnEl.innerHTML='<span style="color:var(--early);">✓ BLP/SLP balanced ('+myB+' each)</span>';
+    }
+  }
 }
 
 function saveSwapInline(){
@@ -1835,7 +1988,9 @@ function saveSwapInline(){
   const mon=getMonday(parseDate(wc));
   const monStr=fmtDate(mon);
   const given=getLinkForWeek(mon)||HOME_LINK;
-  const swapRec={id:uid(),wc:monStr,linkGiven:given,linkReceived:received,driver,scope:swapInlineScope};
+  const myBlp=countBlpSlp(given);
+  const theirBlp=countBlpSlp(received);
+  const swapRec={id:uid(),wc:monStr,linkGiven:given,linkReceived:received,driver,scope:swapInlineScope,myBlp:myBlp,theirBlp:theirBlp,blpDiff:theirBlp-myBlp};
   S.swaps.push(swapRec);
   if(swapInlineScope==='week'){
     for(let i=0;i<7;i++){
@@ -1924,7 +2079,7 @@ function renderPMFinder(){
       });
       if(pmDays.length>0){
         const wcSwap=S.swaps.find(function(sw){ return sw.wc===fmtDate(wc)&&sw.scope==='week'; });
-        weekResults.push({wc:wc,wcStr:fmtDate(wc),link:link,days:days,pmDays:pmDays,weekSwapped:!!wcSwap,swapTo:wcSwap?wcSwap.linkReceived:null,wcSwapId:wcSwap?wcSwap.id:null});
+        weekResults.push({wc:wc,wcStr:fmtDate(wc),link:link,days:days,pmDays:pmDays,weekSwapped:!!wcSwap,swapTo:wcSwap?wcSwap.linkReceived:null,wcSwapId:wcSwap?wcSwap.id:null,swapDriver:wcSwap?wcSwap.driver:null});
       }
     }
     cur=addDays(cur,7);
@@ -1937,6 +2092,8 @@ function renderPMFinder(){
   }
 
   el.innerHTML='<div style="font-size:11px;color:var(--muted);margin-bottom:8px;">'+weekResults.length+' week'+(weekResults.length!==1?'s':'')+' with PM duties</div>';
+
+  pmfResults=weekResults; // store for copy
 
   weekResults.forEach(function(r){
     const row=document.createElement('div');
@@ -1962,19 +2119,61 @@ function renderPMFinder(){
 
     const headerDiv=document.createElement('div');
     headerDiv.style.cssText='display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px;';
-    headerDiv.innerHTML=
-      '<div style="font-size:14px;font-weight:800;color:var(--accent);">WC '+wcDD+'</div>'+
-      '<div style="font-size:12px;font-weight:700;color:var(--text);">Link '+r.link+'</div>'+
-      statusHtml+
-      markEmailBtn;
+    // Checkbox for copy selection
+    const cb=document.createElement('input');
+    cb.type='checkbox'; cb.className='pmf-cb pmf-select-cb'; cb.dataset.pmfid=r.wcStr;
+    headerDiv.appendChild(cb);
+    const headerText=document.createElement('div');
+    headerText.style.cssText='flex:1;';
+    // W/C date — clickable to open calendar
+    const wcClickable='<span style="font-size:14px;font-weight:800;color:var(--accent);cursor:pointer;text-decoration:underline;text-decoration-style:dotted;" data-wcstr="'+r.wcStr+'" onclick="openCalendarToWeek(this.getAttribute('+"'data-wcstr'"+'\))">WC '+wcDD+'</span>';
+    // Link display: rostered → swapped if applicable
+    const linkDisp=r.weekSwapped&&r.swapTo
+      ?'<div style="font-size:12px;font-weight:700;margin-top:3px;">Link '+r.link+' <span style="color:var(--accent2);">→</span> Link '+r.swapTo+'</div>'
+      :'<div style="font-size:12px;font-weight:700;margin-top:3px;">Link '+r.link+'</div>';
+    const driverDisp=r.weekSwapped&&r.swapDriver
+      ?'<div style="font-size:11px;color:var(--muted);margin-top:1px;">'+r.swapDriver+'</div>'
+      :'';
+    headerText.innerHTML=
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+wcClickable+statusHtml+'</div>'+
+      linkDisp+
+      driverDisp+
+      (markEmailBtn?'<div style="margin-top:4px;">'+markEmailBtn+'</div>':'');
+    headerDiv.appendChild(headerText);
+
+    // BLP/SLP warning below grid — use roster link data from this result row
+    const myBlpSlp=countBlpSlp(r.link);
+    const theirBlpSlp=r.weekSwapped&&r.swapTo?countBlpSlp(r.swapTo):null;
+    const blpWarnHtml=theirBlpSlp!==null?(
+      (theirBlpSlp!==myBlpSlp)?
+        '<div style="margin-top:8px;padding:8px 10px;background:#78350f22;border:1px solid #f59e0b44;border-radius:6px;font-size:11px;">'+
+          '<span style="font-weight:700;color:var(--accent);">⚠ BLP/SLP Count Mismatch</span><br>'+
+          'Your Link: '+myBlpSlp+' days &nbsp;·&nbsp; Swap Link: '+theirBlpSlp+' days &nbsp;·&nbsp; Difference: '+((theirBlpSlp-myBlpSlp)>0?'+':'')+(theirBlpSlp-myBlpSlp)+
+        '</div>':
+        '<div style="margin-top:6px;font-size:11px;color:var(--early);">✓ BLP/SLP balanced ('+myBlpSlp+' each)</div>'
+    ):'';
 
     const gridDiv=document.createElement('div');
-    gridDiv.innerHTML=buildWeekGridHtml(r.link,r.days,r.wc);
+    gridDiv.innerHTML=buildWeekGridHtml(r.link,r.days,r.wc)+blpWarnHtml;
 
     row.appendChild(headerDiv);
     row.appendChild(gridDiv);
     el.appendChild(row);
   });
+}
+
+function countBlpSlp(link){
+  if(!link||!ROSTER[String(link)]) return 0;
+  return ROSTER[String(link)].filter(function(raw){
+    var sh=parseShift(raw);
+    return sh.typeKey==='blp'||sh.typeKey==='slp';
+  }).length;
+}
+
+function getLeaveForDate(ds){
+  return (S.plannedLeave||[]).find(function(lv){
+    return ds>=(lv.start)&&ds<=(lv.end||lv.start);
+  })||null;
 }
 
 function buildWeekGridHtml(link, days, wc){
@@ -1994,15 +2193,101 @@ function buildWeekGridHtml(link, days, wc){
     else if(['am1','am2','am3'].includes(tk)) cls+='sg-am';
     else if(['pm1','pm2','pm3'].includes(tk)) cls+='sg-pm';
     else cls+='sg-normal';
-    // Highlight PM shifts (typeKey pm* OR start time >= 12:00)
     var mins=parseTime(sh.time);
     var isPM=(['pm1','pm2','pm3'].includes(tk))||(mins!==null&&mins>=720&&tk==='normal');
     if(isPM) cls+=' sg-diff';
     var lbl=sh.time?sh.time:sh.code;
-    html+='<td><span class="'+cls+'">'+lbl+'</span></td>';
+    // Check leave overlay for this day
+    var dayDate=addDays(wc,i);
+    var ds=fmtDate(dayDate);
+    var lv=getLeaveForDate(ds);
+    var cellHtml;
+    if(lv){
+      var lvLabels={al:'AL',sl:'SICK',lsl:'LSL'};
+      var lvLabel=lvLabels[lv.type]||'LV';
+      // Show leave(originalShift)
+      var leaveCls='sg-cell '+(lv.type==='al'?'b-al':lv.type==='lsl'?'b-lsl2':'b-sl');
+      cellHtml='<span class="'+leaveCls+'" style="font-size:9px;">'+lvLabel+'('+lbl+')</span>';
+    } else {
+      cellHtml='<span class="'+cls+'">'+lbl+'</span>';
+    }
+    html+='<td>'+cellHtml+'</td>';
   });
   html+='</tr></tbody></table></div>';
   return html;
+}
+
+// ── PMF COPY HELPERS ─────────────────────────────────────
+let pmfResults=[];
+
+function selectAllPMF(){
+  document.querySelectorAll('.pmf-cb').forEach(function(cb){ cb.checked=true; });
+}
+function clearPMFSelection(){
+  document.querySelectorAll('.pmf-cb').forEach(function(cb){ cb.checked=false; });
+}
+
+function copySelectedPMF(){
+  const checked=Array.from(document.querySelectorAll('.pmf-cb:checked'));
+  if(!checked.length){ toast('Select at least one week'); return; }
+  const selectedIds=checked.map(function(cb){ return cb.dataset.pmfid; });
+  const selected=pmfResults.filter(function(r){ return selectedIds.includes(r.wcStr); });
+  const lines=selected.map(function(r){
+    const wcDD=fmtDDMM(r.wc);
+    // Find which days are PM
+    const pmDayNames=r.pmDays.map(function(p){ return DAY3[p.dayIdx]; });
+    const dayRange=pmDayNames.length>0?pmDayNames[0]+(pmDayNames.length>1?'/'+pmDayNames[pmDayNames.length-1]:''):'';
+    // Build horizontal shift row
+    const shiftRow=r.days.map(function(raw,i){
+      var sh=parseShift(raw);
+      var lbl=sh.time?sh.time.replace(':',''):sh.code;
+      // Check leave
+      var ds=fmtDate(addDays(r.wc,i));
+      var lv=getLeaveForDate(ds);
+      if(lv){
+        var lvL={al:'AL',sl:'SICK',lsl:'LSL'}[lv.type]||'LV';
+        lbl=lvL+'('+lbl+')';
+      }
+      return lbl;
+    }).join(' ');
+    return wcDD+' Link '+r.link+(dayRange?' '+dayRange:'')+String.fromCharCode(10)+shiftRow;
+  }).join(String.fromCharCode(10,10));
+
+  // Copy to clipboard — use textarea trick which works reliably in Android Brave PWA
+  // navigator.clipboard.writeText fails in many Android PWA contexts
+  const ta=document.createElement('textarea');
+  ta.value=lines;
+  ta.setAttribute('readonly','');
+  ta.style.cssText='position:fixed;top:0;left:0;width:2em;height:2em;padding:0;border:none;outline:none;box-shadow:none;background:transparent;opacity:0;';
+  document.body.appendChild(ta);
+  // Select the text
+  if(navigator.userAgent.match(/ipad|iphone/i)){
+    const range=document.createRange();
+    range.selectNodeContents(ta);
+    const selection=window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    ta.setSelectionRange(0,999999);
+  } else {
+    ta.select();
+    ta.setSelectionRange(0,999999);
+  }
+  let success=false;
+  try{
+    success=document.execCommand('copy');
+  }catch(e){}
+  document.body.removeChild(ta);
+
+  if(success){
+    toast('Copied to clipboard ✓');
+  } else if(navigator.clipboard){
+    // Last resort async attempt
+    navigator.clipboard.writeText(lines).then(function(){ toast('Copied ✓'); }).catch(function(){
+      toast('Copy not supported — try long-pressing the text');
+    });
+  } else {
+    toast('Copy not supported on this browser');
+  }
 }
 
 function setPMFYear(y){
@@ -2165,6 +2450,7 @@ function renderPay(){
   }
 
   renderPlannedLeave();
+  renderLeaveAdjHistory();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2285,6 +2571,111 @@ function calcLeaveImpact(){
     }
   });
   return impact;
+}
+
+// ── LEAVE ADJUSTMENTS ───────────────────────────────────
+function openLeaveAdjModal(){
+  document.getElementById('lam-leave-type').value='al';
+  document.getElementById('lam-type').value='accrual';
+  document.getElementById('lam-dir').value='increase';
+  document.getElementById('lam-hours').value='';
+  document.getElementById('lam-date').value=fmtDate(today());
+  document.getElementById('lam-reason').value='';
+  document.getElementById('leave-adj-modal').classList.add('open');
+}
+function closeLeaveAdjModal(){ document.getElementById('leave-adj-modal').classList.remove('open'); }
+
+function saveLeaveAdj(){
+  const leaveType=document.getElementById('lam-leave-type').value;
+  const type=document.getElementById('lam-type').value;
+  const dir=document.getElementById('lam-dir').value;
+  const hours=parseFloat(document.getElementById('lam-hours').value);
+  const date=document.getElementById('lam-date').value;
+  const reason=document.getElementById('lam-reason').value.trim();
+  if(!hours||hours<=0){ toast('Enter hours'); return; }
+  if(!date){ toast('Enter date'); return; }
+  if(!S.leaveAdj) S.leaveAdj=[];
+  // Snapshot base balances before first adjustment
+  if(!S.leaveAdjBase) S.leaveAdjBase={al:S.leave.al,lsl:S.leave.lsl,pc:S.leave.pc};
+  const adj={id:uid(),leaveType,type,dir,hours,date,reason};
+  S.leaveAdj.push(adj);
+  recalcLeaveFromAdj();
+  saveState(); closeLeaveAdjModal(); renderPay();
+  toast('Balance adjusted by '+(dir==='increase'?'+':'-')+hours+'h');
+}
+
+function recalcLeaveFromAdj(){
+  // Recalculate balances from scratch using base values stored at first save
+  // Strategy: reverse all adjustments then re-apply remaining ones
+  // We store a base snapshot. Simpler: we just let user know balance is sum of base + all adjs.
+  // The base is what was in settings before any adj. We track it via leaveAdjBase.
+  if(!S.leaveAdjBase){
+    // First time: snapshot current as base
+    S.leaveAdjBase={al:S.leave.al,lsl:S.leave.lsl,pc:S.leave.pc};
+  }
+  // Recompute from base
+  var al=S.leaveAdjBase.al, lsl=S.leaveAdjBase.lsl, pc=S.leaveAdjBase.pc;
+  (S.leaveAdj||[]).forEach(function(a){
+    var delta=a.dir==='increase'?a.hours:-a.hours;
+    if(a.leaveType==='al') al+=delta;
+    else if(a.leaveType==='lsl') lsl+=delta;
+    else if(a.leaveType==='pc') pc+=delta;
+  });
+  S.leave.al=Math.max(0,al);
+  S.leave.lsl=Math.max(0,lsl);
+  S.leave.pc=Math.max(0,pc);
+}
+
+function deleteLeaveAdj(elOrId){
+  const id=typeof elOrId==='string'?elOrId:elOrId.getAttribute('data-adjid');
+  const btn=document.querySelector('[data-adjid="'+id+'"]');
+  if(btn&&btn.dataset.confirming==='yes'){
+    btn.dataset.confirming='';
+    S.leaveAdj=(S.leaveAdj||[]).filter(function(a){ return a.id!==id; });
+    recalcLeaveFromAdj();
+    saveState(); renderPay();
+    toast('Adjustment deleted · Balance recalculated');
+  } else if(btn){
+    btn.dataset.confirming='yes';
+    btn.textContent='Tap to confirm delete';
+    btn.style.color='#ef4444';
+    setTimeout(function(){
+      if(btn.dataset.confirming==='yes'){
+        btn.dataset.confirming='';
+        btn.textContent='Delete';
+        btn.style.color='';
+      }
+    },3500);
+  }
+}
+
+function renderLeaveAdjHistory(){
+  const el=document.getElementById('leave-adj-list');
+  if(!el) return;
+  const adjs=(S.leaveAdj||[]).slice().reverse();
+  if(!adjs.length){ el.innerHTML='<div style="font-size:12px;color:var(--muted);margin-bottom:12px;">No adjustments recorded.</div>'; return; }
+  const typeLabels={al:'AL',lsl:'LSL',pc:'Personal'};
+  const adjLabels={accrual:'Accrual',payroll:'Payroll',manual:'Manual'};
+  const adjCls={accrual:'adj-accrual',payroll:'adj-payroll',manual:'adj-manual'};
+  el.innerHTML='';
+  adjs.forEach(function(a){
+    const div=document.createElement('div');
+    div.className='leave-adj-item';
+    div.style.display='flex';
+    div.style.alignItems='flex-start';
+    div.style.justifyContent='space-between';
+    div.style.gap='8px';
+    div.innerHTML=
+      '<div style="flex:1;">'+
+        '<span class="leave-adj-type '+adjCls[a.type]+'">'+adjLabels[a.type]+'</span>'+
+        '<strong>'+typeLabels[a.leaveType]+'</strong> '+
+        (a.dir==='increase'?'<span style="color:var(--early);">+':'<span style="color:#ef4444;">-')+a.hours+'h</span>'+
+        ' <span style="color:var(--muted);">'+a.date+'</span>'+
+        (a.reason?'<div style="color:var(--muted);font-size:11px;margin-top:2px;">'+a.reason+'</div>':'')+
+      '</div>'+
+      '<button class="btn btn-sm btn-danger" data-adjid="'+a.id+'" onclick="deleteLeaveAdj(this.getAttribute('+"'data-adjid'"+'\))">Delete</button>';
+    el.appendChild(div);
+  });
 }
 
 function renderPlannedLeave(){
@@ -2600,18 +2991,16 @@ function renderStats(){
     ?computeStats(ds=>ds.startsWith(yr))
     :computeStats(()=>true);
 
+  const blpSlpDays=stats.blpW+stats.slpW;
+  const blpSlpHrs=(blpSlpDays*8).toFixed(1); // approx 8h each
   const rows=[
     ['Hours Worked',stats.hrsWorked.toFixed(1)+'h'],
     ['Shifts Worked',stats.shifts],
-    ['BLP Worked',stats.blpW],
-    ['SLP Worked',stats.slpW],
-    ['AFP Days',stats.afpD],
-    ['AFA Days',stats.afaD],
+    ['BLP/SLP Worked',blpSlpDays+' days (≈'+blpSlpHrs+'h)'],
     ['AL Days',stats.alD],
     ['Sick Leave Days',stats.slD],
     ['Claims',stats.claims],
     ['Swaps',stats.swaps],
-    ['Links Worked',stats.links],
   ];
 
   el.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">'+
@@ -2774,7 +3163,7 @@ function toast(msg){
 }
 
 // Modal close on backdrop tap
-['shift-modal','claim-modal','contact-modal','swap-modal','leave-modal'].forEach(id=>{
+['shift-modal','claim-modal','contact-modal','swap-modal','leave-modal','leave-adj-modal'].forEach(id=>{
   document.getElementById(id).addEventListener('click',function(e){
     if(e.target===this) this.classList.remove('open');
   });
