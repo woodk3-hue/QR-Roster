@@ -234,7 +234,22 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 @media(min-width:600px){.screen{max-width:600px;margin:0 auto;}.bottom-nav{max-width:600px;margin:0 auto;left:50%;transform:translateX(-50%);}}
 
 /* ── DAY/NIGHT TOGGLE ── */
-body.day-mode{--bg:#f0f2f8;--surface:#ffffff;--surface2:#e8eaf0;--border:#c8cde0;--text:#1a1d27;--muted:#555f7a;}
+body.day-mode{
+  --bg:#f0f2f8;--surface:#ffffff;--surface2:#e8eaf0;--border:#c8cde0;
+  --text:#1a1d27;--muted:#555f7a;
+  --early:#0a7a50;--mid:#b45309;--late:#b91c1c;
+  --al:#b91c1c;--lsl:#0f766e;--sl:#0369a1;
+}
+body.day-mode .b-al{background:rgba(185,28,28,.25);color:#991b1b;}
+body.day-mode .b-lsl,.day-mode .b-lsl2{background:rgba(15,118,110,.25);color:#0f766e;}
+body.day-mode .b-sl{background:rgba(3,105,161,.25);color:#0369a1;}
+body.day-mode .cal-cell.c-al{background:rgba(185,28,28,.12);}
+body.day-mode .cal-cell.c-lsl{background:rgba(15,118,110,.12);}
+body.day-mode .swap-email-card{border-color:#b45309;}
+body.day-mode .swap-pill.pill-upcoming{background:#14532d;color:#bbf7d0;}
+body.day-mode .pmf-not-swapped{background:#1e3a8a;color:#bfdbfe;}
+body.day-mode .pmf-swapped{background:#14532d;color:#bbf7d0;}
+body.day-mode .alert-row{background:#f8f9ff;border:1px solid #c8cde0;}
 body.day-mode .cal-cell.c-blp{background:rgba(79,70,229,.08);}
 body.day-mode .cal-cell.c-slp{background:rgba(79,70,229,.08);}
 body.day-mode .b-blp,.day-mode .b-slp{background:rgba(79,70,229,.2);color:#3730a3;}
@@ -250,7 +265,18 @@ body.day-mode .b-blp,.day-mode .b-slp{background:rgba(79,70,229,.2);color:#3730a
 .leave-type-sl{border-left:3px solid #0369a1;}
 .leave-type-lsl{border-left:3px solid #0d9488;}
 /* ── DASH SWAP EMAIL CARD ── */
-.swap-email-card{background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.swap-email-card{background:var(--surface);border:1px solid var(--accent);border-radius:8px;padding:8px 10px;margin-bottom:6px;}
+.shift-preview-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;}
+.shift-preview-time{font-size:22px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--accent);line-height:1;}
+.shift-preview-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.spinner-row{display:flex;align-items:center;gap:6px;}
+.spinner-btn{width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.pmf-not-swapped{background:#1e3a8a;color:#bfdbfe;font-size:10px;padding:2px 6px;border-radius:8px;font-weight:700;}
+.pmf-swapped{background:#14532d;color:#6ee7b7;font-size:10px;padding:2px 6px;border-radius:8px;font-weight:700;}
+.pmf-row-unswapped{background:#450a0a !important;border-color:#991b1b !important;}
+.pmf-row-swapped{background:#052e16 !important;border-color:#166534 !important;}
+body.day-mode .pmf-row-unswapped{background:#fef2f2 !important;border-color:#f87171 !important;}
+body.day-mode .pmf-row-swapped{background:#f0fdf4 !important;border-color:#4ade80 !important;}
 .swap-email-countdown{font-size:20px;font-weight:800;color:var(--accent);}
 /* ── CONTACT ACTIONS ── */
 .contact-actions{display:flex;gap:6px;}
@@ -292,21 +318,31 @@ document.getElementById('pwa-manifest').setAttribute('href', manifestURL);
     <button class="btn btn-sm" onclick="showScreen('settings')">⚙</button>
   </div>
 
-  <!-- Current Link Card -->
-  <div class="card" style="margin-bottom:10px;">
-    <div class="card-title">Current Link</div>
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-      <div>
-        <div style="font-size:42px;font-weight:900;color:var(--accent);line-height:1;font-variant-numeric:tabular-nums;" id="dash-link">—</div>
-        <div id="dash-orig-link-row" style="display:none;font-size:12px;color:var(--muted);margin-top:4px;">
-          Original Link: <span id="dash-orig-link" style="font-weight:700;color:var(--text);">—</span>
-        </div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px;" id="dash-link-sub">—</div>
+  <!-- Current Link Card (compact) -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+    <div>
+      <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Current Link</div>
+      <div style="font-size:34px;font-weight:900;color:var(--accent);line-height:1.1;font-variant-numeric:tabular-nums;" id="dash-link">—</div>
+      <div id="dash-orig-link-row" style="display:none;font-size:11px;color:var(--muted);">
+        Rostered: <span id="dash-orig-link" style="font-weight:700;">—</span>
       </div>
-      <div style="text-align:right;">
-        <div style="font-size:10px;color:var(--muted);">W/C</div>
-        <div style="font-size:15px;font-weight:700;" id="dash-wc-label">—</div>
-      </div>
+      <div style="font-size:11px;color:var(--muted);" id="dash-link-sub">—</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:10px;color:var(--muted);">W/C</div>
+      <div style="font-size:14px;font-weight:700;" id="dash-wc-label">—</div>
+    </div>
+  </div>
+
+  <!-- Today's Shift + Next Shift -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+    <div class="shift-preview-card" id="dash-today-shift" onclick="openDashShiftEdit('today')">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Today</div>
+      <div id="dash-today-content"><div style="color:var(--muted);font-size:12px;">—</div></div>
+    </div>
+    <div class="shift-preview-card" id="dash-next-shift">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Next Shift</div>
+      <div id="dash-next-content"><div style="color:var(--muted);font-size:12px;">—</div></div>
     </div>
   </div>
 
@@ -315,18 +351,6 @@ document.getElementById('pwa-manifest').setAttribute('href', manifestURL);
     <div class="dash-stat">
       <div class="dash-stat-val" id="dash-claims-open">0</div>
       <div class="dash-stat-lbl">Open Claims</div>
-    </div>
-    <div class="dash-stat">
-      <div class="dash-stat-val" id="dash-swaps-upcoming">0</div>
-      <div class="dash-stat-lbl">Upcoming Swaps</div>
-    </div>
-    <div class="dash-stat">
-      <div class="dash-stat-val" id="dash-al-days">—</div>
-      <div class="dash-stat-lbl">AL Days Left</div>
-    </div>
-    <div class="dash-stat">
-      <div class="dash-stat-val" id="dash-lsl-days">—</div>
-      <div class="dash-stat-lbl">LSL Days Left</div>
     </div>
   </div>
 
@@ -349,7 +373,7 @@ document.getElementById('pwa-manifest').setAttribute('href', manifestURL);
         <button id="cal-night-btn" class="active" onclick="setCalTheme('night')">🌙</button>
         <button id="cal-day-btn" onclick="setCalTheme('day')">☀️</button>
       </div>
-      <div id="cal-link-badge" class="link-badge">—</div>
+      <div id="cal-link-badge" class="link-badge" onclick="calToday()" style="cursor:pointer;" title="Go to today">—</div>
     </div>
   </div>
 
@@ -395,15 +419,18 @@ document.getElementById('pwa-manifest').setAttribute('href', manifestURL);
   <div class="card" style="margin-bottom:14px;">
     <div class="card-title">Record a Swap</div>
 
-    <!-- Your Link -->
+    <!-- Your Link — enter link to auto-find WC -->
     <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap;">
       <div style="flex:1;min-width:80px;">
-        <div class="form-label">Your Link</div>
-        <div style="font-size:28px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums;" id="sw-your-link-disp">—</div>
+        <div class="form-label">My Link</div>
+        <input type="number" class="form-input" id="sw-my-link" min="1" max="440" placeholder="e.g. 249"
+               oninput="onMyLinkInput()" style="font-size:16px;font-weight:700;">
+        <div style="font-size:28px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums;margin-top:2px;" id="sw-your-link-disp">—</div>
       </div>
       <div style="flex:2;min-width:140px;">
         <div class="form-label">W/C Date (Monday)</div>
         <input type="date" class="form-input" id="sw-wc" onchange="onSwapWCChange()">
+        <div style="font-size:11px;color:var(--muted);margin-top:3px;" id="sw-wc-hint"></div>
       </div>
     </div>
 
@@ -467,9 +494,12 @@ document.getElementById('pwa-manifest').setAttribute('href', manifestURL);
 
   <hr class="divider">
 
-  <!-- ── SWAP HISTORY (bottom) ── -->
-  <div class="section-label">Swap History</div>
-  <div id="swap-log"></div>
+  <!-- ── SWAP HISTORY (bottom, collapsible) ── -->
+  <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:4px;" onclick="toggleSwapHistory()">
+    <div class="section-label" style="margin:0;">Swap History</div>
+    <span id="swap-history-arrow" style="font-size:16px;color:var(--muted);">▸</span>
+  </div>
+  <div id="swap-log" style="display:none;"></div>
 </div>
 
 <!-- ═══════════════════════════════════════
@@ -494,25 +524,41 @@ document.getElementById('pwa-manifest').setAttribute('href', manifestURL);
 <div id="screen-pay" class="screen">
   <div class="screen-header"><div class="screen-title">Pay & Leave</div></div>
 
-  <!-- Leave Balances — TOP of page -->
+  <!-- Leave Balances — TOP of page, inline editable -->
   <div class="section-label">Leave Balances</div>
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
     <div class="pay-card" style="text-align:center;border-left:3px solid #dc2626;">
       <div class="pay-lbl">Annual Leave</div>
-      <div style="font-size:20px;font-weight:800;color:#dc2626;" id="pay-al-hrs">—</div>
+      <div style="display:flex;align-items:baseline;justify-content:center;gap:4px;">
+        <input type="number" id="pay-al-input" step="0.01" min="0"
+               style="font-size:18px;font-weight:800;color:#dc2626;background:none;border:none;border-bottom:1px dashed #dc262688;width:70px;text-align:center;padding:0;outline:none;"
+               onchange="saveLeaveBalanceInline('al',this.value)">
+        <span style="font-size:11px;color:var(--muted);">h</span>
+      </div>
       <div class="pay-sub" id="pay-al-days">—</div>
     </div>
     <div class="pay-card" style="text-align:center;border-left:3px solid #0d9488;">
       <div class="pay-lbl">Long Service</div>
-      <div style="font-size:20px;font-weight:800;color:#0d9488;" id="pay-lsl-hrs">—</div>
+      <div style="display:flex;align-items:baseline;justify-content:center;gap:4px;">
+        <input type="number" id="pay-lsl-input" step="0.01" min="0"
+               style="font-size:18px;font-weight:800;color:#0d9488;background:none;border:none;border-bottom:1px dashed #0d948888;width:70px;text-align:center;padding:0;outline:none;"
+               onchange="saveLeaveBalanceInline('lsl',this.value)">
+        <span style="font-size:11px;color:var(--muted);">h</span>
+      </div>
       <div class="pay-sub" id="pay-lsl-days">—</div>
     </div>
     <div class="pay-card" style="text-align:center;border-left:3px solid #7c3aed;">
       <div class="pay-lbl">Personal</div>
-      <div style="font-size:20px;font-weight:800;color:#7c3aed;" id="pay-pc-hrs">—</div>
+      <div style="display:flex;align-items:baseline;justify-content:center;gap:4px;">
+        <input type="number" id="pay-pc-input" step="0.01" min="0"
+               style="font-size:18px;font-weight:800;color:#7c3aed;background:none;border:none;border-bottom:1px dashed #7c3aed88;width:70px;text-align:center;padding:0;outline:none;"
+               onchange="saveLeaveBalanceInline('pc',this.value)">
+        <span style="font-size:11px;color:var(--muted);">h</span>
+      </div>
       <div class="pay-sub" id="pay-pc-days">—</div>
     </div>
   </div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Tap a balance to edit. Changes are tracked below.</div>
 
   <!-- Projected balances (shown only when future leave is planned) -->
   <div id="pay-projected" class="card" style="display:none;margin-bottom:12px;"></div>
@@ -524,11 +570,8 @@ document.getElementById('pwa-manifest').setAttribute('href', manifestURL);
   </div>
   <div id="planned-leave-list"></div>
 
-  <!-- Leave Balance Adjustments -->
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;margin-top:14px;">
-    <div class="section-label" style="margin:0;">Adjust Leave Balance</div>
-    <button class="btn btn-sm btn-accent" onclick="openLeaveAdjModal()">+ Adjust</button>
-  </div>
+  <!-- Leave Adjustment History -->
+  <div class="section-label">Balance Adjustment History</div>
   <div id="leave-adj-list"></div>
 
   <!-- Pay estimates -->
@@ -954,17 +997,28 @@ document.getElementById('pwa-manifest').setAttribute('href', manifestURL);
         <option value="manual">Manual Correction</option>
       </select>
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Direction</label>
-        <select class="form-select" id="lam-dir">
-          <option value="increase">+ Increase</option>
-          <option value="decrease">- Decrease</option>
-        </select>
+    <div class="form-group">
+      <label class="form-label">Direction</label>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-accent" id="lam-inc-btn" style="flex:1;" onclick="setLamDir('increase')">+ Increase</button>
+        <button class="btn" id="lam-dec-btn" style="flex:1;" onclick="setLamDir('decrease')">− Decrease</button>
       </div>
-      <div class="form-group">
-        <label class="form-label">Hours</label>
-        <input type="number" class="form-input" id="lam-hours" step="0.01" min="0" placeholder="e.g. 8.00">
+      <input type="hidden" id="lam-dir" value="increase">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Hours</label>
+      <div class="spinner-row">
+        <button class="spinner-btn" onclick="adjustLamHours(-1)">−</button>
+        <input type="number" class="form-input" id="lam-hours" step="0.25" min="0" placeholder="0.00"
+               style="text-align:center;font-size:18px;font-weight:700;" oninput="clampLamHours()">
+        <button class="spinner-btn" onclick="adjustLamHours(1)">+</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="setLamHours(8)">8h</button>
+        <button class="btn btn-sm" onclick="setLamHours(4)">4h</button>
+        <button class="btn btn-sm" onclick="setLamHours(1)">1h</button>
+        <button class="btn btn-sm" onclick="setLamHours(0.5)">30m</button>
+        <button class="btn btn-sm" onclick="setLamHours(0.25)">15m</button>
       </div>
     </div>
     <div class="form-group">
@@ -973,7 +1027,7 @@ document.getElementById('pwa-manifest').setAttribute('href', manifestURL);
     </div>
     <div class="form-group">
       <label class="form-label">Reason</label>
-      <input type="text" class="form-input" id="lam-reason" placeholder="e.g. Leave taken 07/08-22/08">
+      <input type="text" class="form-input" id="lam-reason" placeholder="e.g. Leave taken 07/08–22/08">
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeLeaveAdjModal()">Cancel</button>
@@ -1257,9 +1311,6 @@ function renderDash(){
   const openClaims=S.claims.filter(function(c){ return !c.submitted; }).length;
   const upcomingSwaps=S.swaps.filter(function(sw){ const d=parseDate(sw.wc); return d>=now; }).length;
   document.getElementById('dash-claims-open').textContent=openClaims;
-  document.getElementById('dash-swaps-upcoming').textContent=upcomingSwaps;
-  document.getElementById('dash-al-days').textContent=(S.leave.al/hrsPerDay).toFixed(1);
-  document.getElementById('dash-lsl-days').textContent=(S.leave.lsl/hrsPerDay).toFixed(1);
 
   // Upcoming Swap Email Cards
   const emailEl=document.getElementById('dash-swap-emails');
@@ -1276,20 +1327,16 @@ function renderDash(){
         const sent=S.swapEmailSent[sw.id];
         const countdown=daysLeft<=0?'<span style="color:#ef4444;font-weight:700;">Due Now!</span>':daysLeft===1?'<span style="color:var(--accent);">Tomorrow</span>':'<span class="swap-email-countdown">'+daysLeft+'</span> days remaining';
         return '<div class="swap-email-card" id="sec-'+sw.id+'">'+
-          '<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Upcoming Swap</div>'+
-          '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">'+
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">'+
             '<div>'+
-              '<div style="font-size:13px;font-weight:800;margin-bottom:2px;">W/C '+fmtDDMM(wcDate)+'</div>'+
-              '<div style="font-size:12px;margin-bottom:1px;">Your Link: <strong>'+sw.linkGiven+'</strong></div>'+
-              '<div style="font-size:12px;margin-bottom:1px;">Swapped To: <strong style="color:var(--accent2);">'+sw.linkReceived+'</strong></div>'+
-              (sw.driver?'<div style="font-size:12px;color:var(--muted);">'+sw.driver+'</div>':'')+
+              '<div style="font-size:12px;font-weight:800;">W/C '+fmtDDMM(wcDate)+' &nbsp;<span style="font-weight:400;color:var(--muted);">Lnk '+sw.linkGiven+' → '+sw.linkReceived+'</span></div>'+
+              (sw.driver?'<div style="font-size:11px;color:var(--muted);">'+sw.driver+'</div>':'')+
+              '<div style="font-size:11px;color:var(--muted);">Email due: '+fmtDDMM(emailDue)+' · '+countdown+'</div>'+
             '</div>'+
             (sent
-              ?'<div style="text-align:right;"><span style="color:var(--early);font-weight:700;font-size:12px;">Email Sent ✓</span><br><button class="btn btn-sm" style="margin-top:4px;font-size:10px;padding:3px 8px;" data-swapid="'+sw.id+'" onclick="undoSwapEmailSentById(this)">Undo</button></div>'
-              :'<button class="btn btn-sm btn-accent" data-swapid="'+sw.id+'" onclick="markSwapEmailSentById(this)">Mark Email Sent</button>')+
+              ?'<div style="text-align:right;white-space:nowrap;"><span style="color:var(--early);font-size:11px;font-weight:700;">✓ Sent</span><br><button class="btn btn-sm" style="font-size:9px;padding:2px 6px;margin-top:2px;" data-swapid="'+sw.id+'" onclick="undoSwapEmailSentById(this)">Undo</button></div>'
+              :'<button class="btn btn-sm btn-accent" style="font-size:10px;white-space:nowrap;" data-swapid="'+sw.id+'" onclick="markSwapEmailSentById(this)">Mark Sent</button>')+
           '</div>'+
-          '<div style="font-size:12px;color:var(--muted);">Email due: '+fmtDDMM(emailDue)+' · '+countdown+'</div>'+
-          (sw.blpDiff!=null?'<div style="font-size:11px;color:'+(sw.blpDiff===0?'var(--early)':'var(--accent)')+';margin-top:4px;">'+(sw.blpDiff===0?'✓ BLP/SLP balanced':'⚠ BLP/SLP diff: '+(sw.blpDiff>0?'+':'')+sw.blpDiff+' (You: '+sw.myBlp+' · Them: '+sw.theirBlp+')')+'</div>':'')+
         '</div>';
       }).join('');
   } else {
@@ -1325,7 +1372,81 @@ function renderDash(){
     ?alerts.map(function(a){ return '<div class="alert-row"><div class="alert-dot '+a.dot+'"></div><div style="flex:1;">'+a.msg+'</div></div>'; }).join('')
     :'<div class="empty-state" style="padding:16px;">No alerts — all good! ✓</div>';
 
+  // Today's shift
+  renderDashShift('today');
+  renderDashShift('next');
+
   updateClaimsBadge();
+}
+
+function getShiftDisplayForDate(ds){
+  const d=parseDate(ds);
+  const mon=getMonday(d);
+  const link=getLinkForWeek(mon);
+  const ov=S.days[ds];
+  const idx=dayIdx(d);
+  // Check for swap
+  const weekSwap=S.swaps.find(function(sw){ return sw.wc===fmtDate(mon)&&sw.scope==='week'; });
+  const effectiveLink=weekSwap?weekSwap.linkReceived:link;
+  const raw=effectiveLink?getRaw(effectiveLink,idx):'';
+  const sh=parseShift(raw);
+  // Use override times if set
+  const start=(ov&&ov.start)?ov.start:sh.time;
+  const end=(ov&&ov.end)?ov.end:null;
+  const dur=start&&end?calcDur(start,end):null;
+  const guards=(ov&&ov.guards)?ov.guards.split('\n')[0]:'';
+  const typeKey=(ov&&ov.type&&ov.type!=='normal')?ov.type:sh.typeKey;
+  return {start,end,dur,guards,typeKey,code:sh.code,link:effectiveLink};
+}
+
+function renderDashShift(which){
+  const now=today();
+  const todayStr=fmtDate(now);
+  let ds=todayStr;
+
+  if(which==='next'){
+    // Find next rostered working day (not BLP/SLP/leave) starting tomorrow
+    for(let i=1;i<=14;i++){
+      const candidate=fmtDate(addDays(now,i));
+      const info=getShiftDisplayForDate(candidate);
+      if(!['blp','slp','al','lsl','sick','lwop','rdo'].includes(info.typeKey)){
+        ds=candidate;
+        break;
+      }
+    }
+    if(ds===todayStr){ document.getElementById('dash-next-content').innerHTML='<div style="color:var(--muted);font-size:12px;">No shift in next 14 days</div>'; return; }
+  }
+
+  const info=getShiftDisplayForDate(ds);
+  const el=document.getElementById('dash-'+(which==='today'?'today':'next')+'-content');
+  const d=parseDate(ds);
+
+  if(['blp','slp'].includes(info.typeKey)){
+    el.innerHTML='<div style="font-size:13px;font-weight:700;color:var(--muted);">'+(info.typeKey==='blp'?'BLP':'SLP')+'</div><div style="font-size:10px;color:var(--muted);">Rest day</div>';
+    return;
+  }
+  if(['al','lsl','sick'].includes(info.typeKey)){
+    const lbl={al:'Annual Leave',lsl:'Long Service Leave',sick:'Sick Leave'}[info.typeKey]||info.typeKey;
+    el.innerHTML='<div style="font-size:12px;font-weight:700;color:#dc2626;">'+lbl+'</div>';
+    return;
+  }
+  if(!info.start){
+    el.innerHTML='<div style="color:var(--muted);font-size:12px;">'+(info.code||'—')+'</div>';
+    return;
+  }
+
+  const dateLabel=which==='next'?'<div style="font-size:10px;color:var(--muted);margin-bottom:2px;">'+d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})+'</div>':'';
+  el.innerHTML=dateLabel+
+    '<div class="shift-preview-time">'+info.start+(info.end?'–'+info.end:'')+'</div>'+
+    (info.dur?'<div class="shift-preview-meta">'+info.dur+'</div>':'')+
+    (info.guards?'<div class="shift-preview-meta" style="color:var(--accent2);">'+info.guards+'</div>':'');
+}
+
+function openDashShiftEdit(which){
+  const now=today();
+  const ds=fmtDate(now);
+  const d=parseDate(ds);
+  openShiftModal(ds, dayIdx(d));
 }
 
 function openCalendarToWeek(mondayStr){
@@ -1400,7 +1521,7 @@ function renderCal(){
   const mon=getMonday(now);
   const link=getLinkForWeek(mon);
   document.getElementById('cal-link-badge').textContent=link||'?';
-  document.getElementById('cal-wc-info').textContent=link?'Home Link '+HOME_LINK+' · This week: '+link:'Set link in Settings';
+  document.getElementById('cal-wc-info').textContent='';
 
   // PM swap status for this month
   const pmStatusEl=document.getElementById('cal-pm-status');
@@ -1491,7 +1612,30 @@ function renderCalCell(d, otherMonth){
 
   let inner='<div class="cal-day-num">'+d.getDate()+'</div>';
 
-  if(['al','lsl','afp','afa','blp','slp','sl','lwop','blp_worked','slp_worked'].includes(tk)){
+  // ── PRIORITY: if override has a start time, always show as worked shift ──
+  // This handles: editing a BLP day, editing a spare AM/PM day, etc.
+  const ovForCell=S.days[ds];
+  const hasWorkedOverride=ovForCell&&(!ovForCell.type||ovForCell.type==='normal')&&ovForCell.start;
+  if(hasWorkedOverride){
+    const wStart=ovForCell.start;
+    const wEnd=ovForCell.end||null;
+    const wDur=wStart&&wEnd?calcDur(wStart,wEnd):null;
+    const durShort=wDur?wDur.replace(' 0m',''):'';
+    // If original roster was BLP/SLP, show the badge so it's still visible
+    if(tk==='blp'||tk==='slp'){
+      inner+='<div class="cal-badge '+(tk==='blp'?'b-blp':'b-slp')+'" style="margin-bottom:2px;">'+(tk==='blp'?'BLP':'SLP')+'</div>';
+    }
+    inner+='<div class="cal-time" style="'+timeColor(wStart)+';">'+wStart+'</div>';
+    if(durShort) inner+='<div style="font-size:10px;color:var(--muted);line-height:1.2;">('+durShort+')</div>';
+    if(ovForCell.guards&&ovForCell.guards.trim()){
+      inner+='<div class="cal-guard">'+ovForCell.guards.trim().split('\n')[0]+'</div>';
+    }
+  } else if((tk==='blp_worked'||tk==='slp_worked')&&sh.time&&sh.endTime){
+    const dur=calcDur(sh.time,sh.endTime);
+    const hrs=dur?'('+dur.replace(' 0m','').replace('h','h').replace('m','m')+')':'';
+    inner+='<div class="cal-time" style="color:var(--early);font-size:11px;">'+sh.time+'–'+sh.endTime+' '+hrs+'</div>';
+    inner+='<div class="cal-code">'+(tk==='blp_worked'?'BLP✓':'SLP✓')+'</div>';
+  } else if(['al','lsl','afp','afa','blp','slp','sl','lwop','blp_worked','slp_worked'].includes(tk)){
     const labels={al:'AL',lsl:'LSL',afp:'AFP',afa:'AFA',blp:'BLP',slp:'SLP',sl:'SL',lwop:'LWOP',blp_worked:'BLP✓',slp_worked:'SLP✓'};
     const bcls={al:'b-al',lsl:'b-lsl',afp:'b-afp',afa:'b-afa',blp:'b-blp',slp:'b-slp',sl:'b-sl',lwop:'b-al',blp_worked:'b-am1',slp_worked:'b-slp'};
     inner+='<div class="cal-badge '+bcls[tk]+'">'+labels[tk]+'</div>';
@@ -1516,11 +1660,16 @@ function renderCalCell(d, otherMonth){
   } else if(['pm1','pm2','pm3'].includes(tk)){
     inner+='<div class="cal-badge b-pm1">'+sh.code+'</div>';
   } else if(sh.time){
-    const dispTime=(sh.timeChanged&&sh.endTime)?(sh.time+'–'+sh.endTime):sh.time;
-    inner+='<div class="cal-time" style="'+timeColor(sh.time)+';">'+dispTime+'</div>';
-    inner+='<div class="cal-code">'+sh.code+'</div>';
-    if(sh.timeChanged&&sh.origTime){
-      inner+='<div class="orig-strike">'+sh.origTime+' '+sh.origCode+'</div>';
+    // Show start time + duration only — compact for cell
+    inner+='<div class="cal-time" style="'+timeColor(sh.time)+';">'+sh.time+'</div>';
+    if(sh.endTime){
+      const dur=calcDur(sh.time,sh.endTime);
+      if(dur) inner+='<div style="font-size:10px;color:var(--muted);line-height:1.2;">('+dur.replace(' 0m','')+')</div>';
+    }
+    // Guard quick view
+    const ovG=S.days[ds];
+    if(ovG&&ovG.guards&&ovG.guards.trim()){
+      inner+='<div class="cal-guard">'+ovG.guards.trim().split('\n')[0]+'</div>';
     }
   } else if(sh.code&&sh.code!=='--'){
     inner+='<div class="cal-code" style="font-weight:700;">'+sh.code+'</div>';
@@ -1545,14 +1694,7 @@ function renderCalCell(d, otherMonth){
     cls+=' '+leaveBgCls[leavePeriod.type];
   }
 
-  // Guard quick view — show first guard name if recorded (not on leave days)
-  if(!leavePeriod){
-    const ov0=S.days[ds];
-    if(ov0&&ov0.guards&&ov0.guards.trim()){
-      const firstName=ov0.guards.trim().split('\n')[0];
-      inner+='<div class="cal-guard">'+firstName+'</div>';
-    }
-  }
+  // Guard quick view handled inline in shift display blocks above
 
   return '<div class="'+cls+'" data-ds="'+ds+'">'+inner+'</div>';
 }
@@ -1742,16 +1884,40 @@ function renderSwaps(){
   renderPMFinder();
 }
 
+function toggleSwapHistory(){
+  const el=document.getElementById('swap-log');
+  const arrow=document.getElementById('swap-history-arrow');
+  if(el.style.display==='none'){
+    el.style.display='block';
+    if(arrow) arrow.textContent='▾';
+    renderSwapLog();
+  } else {
+    el.style.display='none';
+    if(arrow) arrow.textContent='▸';
+  }
+}
+
 function renderSwapLog(){
   const el=document.getElementById('swap-log');
   if(!S.swaps.length){ el.innerHTML='<div class="empty-state">No swaps recorded yet.</div>'; return; }
   const now=today();
-  const sorted=[...S.swaps].sort((a,b)=>b.wc.localeCompare(a.wc));
+  // Sort by WC ascending (chronological), group display by month
+  const sorted=[...S.swaps].sort(function(a,b){ return a.wc.localeCompare(b.wc); });
   el.innerHTML='';
+  let lastMonthKey='';
   sorted.forEach(sw=>{
     const d=parseDate(sw.wc);
     const isPast=addDays(d,6)<now;
     const dd=fmtDDMM(d);
+    // Month group header
+    const monthKey=d.getFullYear()+'-'+pad(d.getMonth()+1);
+    if(monthKey!==lastMonthKey){
+      lastMonthKey=monthKey;
+      const mHeader=document.createElement('div');
+      mHeader.style.cssText='font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;padding:6px 0 3px;border-bottom:1px solid var(--border);margin-bottom:4px;margin-top:'+(lastMonthKey===monthKey?'0':'8px')+';';
+      mHeader.textContent=d.toLocaleDateString('en-AU',{month:'long',year:'numeric'});
+      el.appendChild(mHeader);
+    }
     const div=document.createElement('div');
     div.className='swap-log-item';
     div.innerHTML=
@@ -1886,6 +2052,28 @@ function saveSwap(){
   toast('Swap recorded · Lnk '+received+(driver?' · '+driver:''));
 }
 
+
+function onMyLinkInput(){
+  const targetLink=parseInt(document.getElementById('sw-my-link').value);
+  const hintEl=document.getElementById('sw-wc-hint');
+  if(!targetLink||targetLink<1||targetLink>440){ hintEl.textContent=''; return; }
+  if(!S.anchorLink||!S.anchorDate){ hintEl.textContent='Set anchor in Settings first'; return; }
+  // Find all future occurrences of this link (up to 440 weeks)
+  const nowMon=getMonday(today());
+  const occurrences=[];
+  for(let w=0;w<440;w++){
+    const mon=addDays(nowMon,w*7);
+    if(getLinkForWeek(mon)===targetLink){
+      occurrences.push(mon);
+    }
+  }
+  if(!occurrences.length){ hintEl.textContent='Link not found in next 440 weeks'; return; }
+  // Show all occurrences and set first one as WC
+  const wcEl=document.getElementById('sw-wc');
+  wcEl.value=fmtDate(occurrences[0]);
+  hintEl.textContent=occurrences.length+' occurrence'+(occurrences.length>1?'s':'')+': '+occurrences.slice(0,3).map(function(m){ return fmtDDMM(m); }).join(', ')+(occurrences.length>3?'…':'');
+  onSwapWCChange();
+}
 
 function onSwapWCChange(){
   const wc=document.getElementById('sw-wc').value;
@@ -2097,20 +2285,20 @@ function renderPMFinder(){
 
   weekResults.forEach(function(r){
     const row=document.createElement('div');
-    row.className='pmf-row';
+    row.className='pmf-row '+(r.weekSwapped?'pmf-row-swapped':'pmf-row-unswapped');
     row.style.cssText='flex-direction:column;align-items:stretch;cursor:default;';
 
     const wcDD=fmtDDMM(r.wc);
     const swapSent=r.weekSwapped&&r.wcSwapId&&S.swapEmailSent[r.wcSwapId];
 
-    // Status badge
+    // Status badge — clear contrast: blue=not swapped, green=swapped
     let statusHtml;
     if(!r.weekSwapped){
-      statusHtml='<span style="font-size:10px;padding:2px 6px;border-radius:8px;background:var(--surface2);color:var(--muted);font-weight:700;">Rostered</span>';
+      statusHtml='<span class="pmf-not-swapped">Not Swapped</span>';
     } else if(swapSent){
-      statusHtml='<span style="font-size:10px;padding:2px 6px;border-radius:8px;background:#064e3b;color:#6ee7b7;font-weight:700;">Email Sent ✓</span>';
+      statusHtml='<span class="pmf-swapped">Email Sent ✓</span>';
     } else {
-      statusHtml='<span style="font-size:10px;padding:2px 6px;border-radius:8px;background:#78350f;color:#fcd34d;font-weight:700;">Swap Email Pending</span>';
+      statusHtml='<span class="pmf-swapped" style="background:#78350f;color:#fcd34d;">Swap Email Pending</span>';
     }
 
     const markEmailBtn=(r.weekSwapped&&r.wcSwapId&&!swapSent)
@@ -2331,20 +2519,98 @@ function renderClaims(){
 
   if(!list.length){ el.innerHTML='<div class="empty-state">No claims here.</div>'; return; }
   const typeLabels={meal:'Meal Claim',outdepot:'Out Depot',brought:'Brought Forward',deferred:'Deferred',emergency:'Emergency Working'};
-  el.innerHTML=list.map(c=>{
-    const el2=document.createElement('div');
-    el2.className='claim-item';
-    el2.onclick=()=>editClaim(c.id);
-    el2.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;">'+
-      '<div class="claim-type">'+typeLabels[c.type]+'</div>'+
-      '<span class="claim-submitted '+(c.submitted?'sub-yes':'sub-no')+'">'+(c.submitted?'Submitted':'Pending')+'</span>'+
-      '</div>'+
-      '<div class="claim-meta">'+c.date+(c.job?' · '+c.job:'')+
-      (c.incident?' · Inc# '+c.incident:'')+
-      (c.submitted&&c.subDate?' · Submitted '+c.subDate:'')+
-      '</div>';
-    return el2.outerHTML;
-  }).join('');
+  el.innerHTML='';
+  list.forEach(function(c){
+    const div=document.createElement('div');
+    div.className='claim-item';
+
+    // Top row: type + status badge
+    const topRow=document.createElement('div');
+    topRow.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;';
+    topRow.innerHTML='<div class="claim-type">'+typeLabels[c.type]+'</div>'+
+      '<span class="claim-submitted '+(c.submitted?'sub-yes':'sub-no')+'">'+(c.submitted?'Submitted':'Pending')+'</span>';
+    div.appendChild(topRow);
+
+    // Meta row: date, job, incident, submitted date
+    const metaRow=document.createElement('div');
+    metaRow.className='claim-meta';
+    metaRow.textContent=c.date+(c.job?' · '+c.job:'')+(c.incident?' · Inc# '+c.incident:'')+(c.submitted&&c.subDate?' · Submitted '+c.subDate:'');
+    div.appendChild(metaRow);
+
+    // Action buttons row
+    const btnRow=document.createElement('div');
+    btnRow.style.cssText='display:flex;gap:6px;margin-top:8px;';
+
+    // Edit button
+    const editBtn=document.createElement('button');
+    editBtn.className='btn btn-sm';
+    editBtn.textContent='✏ Edit';
+    editBtn.onclick=function(e){ e.stopPropagation(); openClaimModal(c.id); };
+    btnRow.appendChild(editBtn);
+
+    // Mark Submitted / Unmark button
+    if(!c.submitted){
+      const subBtn=document.createElement('button');
+      subBtn.className='btn btn-sm btn-accent';
+      subBtn.textContent='✓ Mark Submitted';
+      subBtn.onclick=function(e){
+        e.stopPropagation();
+        const idx=S.claims.findIndex(function(x){ return x.id===c.id; });
+        if(idx>-1){
+          S.claims[idx].submitted=true;
+          S.claims[idx].subDate=fmtDate(today());
+          saveState(); renderClaims(); toast('Claim marked as submitted');
+        }
+      };
+      btnRow.appendChild(subBtn);
+    } else {
+      const unsubBtn=document.createElement('button');
+      unsubBtn.className='btn btn-sm';
+      unsubBtn.textContent='↩ Unmark';
+      unsubBtn.onclick=function(e){
+        e.stopPropagation();
+        const idx=S.claims.findIndex(function(x){ return x.id===c.id; });
+        if(idx>-1){
+          S.claims[idx].submitted=false;
+          S.claims[idx].subDate='';
+          saveState(); renderClaims(); toast('Claim unmarked');
+        }
+      };
+      btnRow.appendChild(unsubBtn);
+    }
+
+    // Delete button — two-tap confirm (no confirm() blocked by Android PWA)
+    const delBtn=document.createElement('button');
+    delBtn.className='btn btn-sm btn-danger';
+    delBtn.style.marginLeft='auto';
+    delBtn.textContent='Delete';
+    delBtn.onclick=function(e){
+      e.stopPropagation();
+      if(delBtn.dataset.confirming==='yes'){
+        delBtn.dataset.confirming='';
+        S.bin.push({id:uid(),kind:'claim',data:c,deletedAt:new Date().toISOString()});
+        S.claims=S.claims.filter(function(x){ return x.id!==c.id; });
+        saveState(); renderClaims(); toast('Claim deleted');
+      } else {
+        delBtn.dataset.confirming='yes';
+        delBtn.textContent='Confirm?';
+        delBtn.style.background='#ef4444';
+        delBtn.style.color='#fff';
+        setTimeout(function(){
+          if(delBtn.dataset.confirming==='yes'){
+            delBtn.dataset.confirming='';
+            delBtn.textContent='Delete';
+            delBtn.style.background='';
+            delBtn.style.color='';
+          }
+        },3000);
+      }
+    };
+    btnRow.appendChild(delBtn);
+
+    div.appendChild(btnRow);
+    el.appendChild(div);
+  });
   updateClaimsBadge();
 }
 
@@ -2405,11 +2671,14 @@ function renderPay(){
   document.getElementById('pay-cph').textContent='$'+cph.toFixed(2);
   document.getElementById('pay-fn-gross').textContent='$'+gross.toFixed(2);
   document.getElementById('pay-fn-sub').textContent=hrs+'h × $'+cph.toFixed(2);
-  document.getElementById('pay-al-hrs').textContent=S.leave.al.toFixed(1)+'h';
+  const alInput=document.getElementById('pay-al-input');
+  const lslInput=document.getElementById('pay-lsl-input');
+  const pcInput=document.getElementById('pay-pc-input');
+  if(alInput&&document.activeElement!==alInput) alInput.value=S.leave.al.toFixed(2);
+  if(lslInput&&document.activeElement!==lslInput) lslInput.value=S.leave.lsl.toFixed(2);
+  if(pcInput&&document.activeElement!==pcInput) pcInput.value=S.leave.pc.toFixed(2);
   document.getElementById('pay-al-days').textContent='≈'+(S.leave.al/hpd).toFixed(1)+' days';
-  document.getElementById('pay-lsl-hrs').textContent=S.leave.lsl.toFixed(1)+'h';
   document.getElementById('pay-lsl-days').textContent='≈'+(S.leave.lsl/hpd).toFixed(1)+' days';
-  document.getElementById('pay-pc-hrs').textContent=S.leave.pc.toFixed(1)+'h';
   document.getElementById('pay-pc-days').textContent='≈'+(S.leave.pc/hpd).toFixed(1)+' days';
 
   // Projected balances after future planned leave
@@ -2574,6 +2843,55 @@ function calcLeaveImpact(){
 }
 
 // ── LEAVE ADJUSTMENTS ───────────────────────────────────
+function setLamDir(dir){
+  document.getElementById('lam-dir').value=dir;
+  document.getElementById('lam-inc-btn').className='btn '+(dir==='increase'?'btn-accent':'');
+  document.getElementById('lam-inc-btn').style.flex='1';
+  document.getElementById('lam-dec-btn').className='btn '+(dir==='decrease'?'btn-accent':'');
+  document.getElementById('lam-dec-btn').style.flex='1';
+}
+function adjustLamHours(delta){
+  const el=document.getElementById('lam-hours');
+  const cur=parseFloat(el.value)||0;
+  el.value=Math.max(0,Math.round((cur+delta*0.25)*100)/100).toFixed(2);
+}
+function setLamHours(val){
+  const el=document.getElementById('lam-hours');
+  const cur=parseFloat(el.value)||0;
+  el.value=(cur+val).toFixed(2);
+}
+function clampLamHours(){
+  const el=document.getElementById('lam-hours');
+  if(parseFloat(el.value)<0) el.value='0';
+}
+
+function saveLeaveBalanceInline(type, val){
+  const hours=parseFloat(val);
+  if(isNaN(hours)||hours<0){ toast('Invalid value'); renderPay(); return; }
+  const prev=S.leave[type];
+  S.leave[type]=hours;
+  // Record the change in leaveAdj history automatically
+  if(!S.leaveAdj) S.leaveAdj=[];
+  const diff=hours-prev;
+  if(Math.abs(diff)>0.001){
+    S.leaveAdj.push({
+      id:uid(),
+      leaveType:type,
+      type:'manual',
+      dir:diff>0?'increase':'decrease',
+      hours:Math.abs(diff),
+      date:fmtDate(today()),
+      reason:'Direct balance edit ('+prev.toFixed(2)+'h → '+hours.toFixed(2)+'h)'
+    });
+  }
+  // Update base snapshot so delete-adj recalc works correctly
+  if(!S.leaveAdjBase) S.leaveAdjBase={al:S.leave.al,lsl:S.leave.lsl,pc:S.leave.pc};
+  S.leaveAdjBase[type]=hours; // new base is the manually entered value
+  saveState();
+  renderPay();
+  toast('Balance updated');
+}
+
 function openLeaveAdjModal(){
   document.getElementById('lam-leave-type').value='al';
   document.getElementById('lam-type').value='accrual';
