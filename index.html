@@ -95,10 +95,10 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 /* ── CALENDAR ── */
 .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
 .cal-month-title{font-size:17px;font-weight:800;}
-.cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px;}
-.cal-dow{text-align:center;font-size:9px;font-weight:700;color:var(--muted);padding:3px 0;text-transform:uppercase;}
+.cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:3px;}
+.cal-dow{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:5px 0;text-transform:uppercase;}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
-.cal-cell{border-radius:6px;padding:3px;min-height:56px;cursor:pointer;position:relative;overflow:hidden;border:1px solid transparent;transition:border-color .1s;}
+.cal-cell{border-radius:8px;padding:6px 5px;min-height:74px;cursor:pointer;position:relative;overflow:hidden;border:1px solid var(--border);transition:border-color .1s;}
 .cal-cell:active{opacity:.7;}
 .cal-cell.today{border-color:var(--accent);}
 .cal-cell.other-month{opacity:.3;}
@@ -112,11 +112,11 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .cal-cell.c-swap{background:rgba(29,78,216,.12);}
 .cal-cell.c-sl{background:rgba(3,105,161,.12);}
 .cal-cell.c-ph{border-color:#f59e0b44;}
-.cal-day-num{font-size:10px;font-weight:700;color:var(--muted);line-height:1;}
+.cal-day-num{font-size:13px;font-weight:800;color:var(--muted);line-height:1;margin-bottom:3px;}
 .today .cal-day-num{color:var(--accent);}
-.cal-time{font-size:11px;font-weight:800;line-height:1.1;margin-top:2px;font-variant-numeric:tabular-nums;}
-.cal-code{font-size:8px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
-.cal-badge{font-size:8px;font-weight:700;padding:1px 3px;border-radius:3px;display:inline-block;margin-top:2px;}
+.cal-time{font-size:16px;font-weight:900;line-height:1.1;margin-top:2px;font-variant-numeric:tabular-nums;}
+.cal-code{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+.cal-badge{font-size:13px;font-weight:800;padding:3px 6px;border-radius:4px;display:inline-block;margin-top:3px;}
 .b-al{background:rgba(220,38,38,.4);color:#fca5a5;}
 .b-lsl{background:rgba(13,148,136,.4);color:#99f6e4;}
 .b-afp,.b-afa{background:rgba(124,58,237,.4);color:#c4b5fd;}
@@ -127,8 +127,8 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .b-lsl2{background:rgba(13,148,136,.4);color:#99f6e4;}
 .b-am1,.b-am2,.b-am3{background:rgba(16,185,129,.25);color:#6ee7b7;}
 .b-pm1,.b-pm2,.b-pm3{background:rgba(245,158,11,.25);color:#fcd34d;}
-.cal-mod-dot{position:absolute;top:3px;right:3px;width:4px;height:4px;border-radius:50%;background:var(--accent2);}
-.orig-strike{font-size:7px;color:var(--muted);text-decoration:line-through;opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cal-mod-dot{position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--accent2);}
+.orig-strike{font-size:10px;color:var(--muted);text-decoration:line-through;opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
 /* day detail panel */
 .day-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:10px;}
@@ -258,7 +258,7 @@ body.day-mode .b-blp,.day-mode .b-slp{background:rgba(79,70,229,.2);color:#3730a
 .toggle-pill button{padding:4px 12px;border-radius:16px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:none;color:var(--muted);transition:all .15s;}
 .toggle-pill button.active{background:var(--accent);color:#000;}
 /* ── CAL GUARD QUICK VIEW ── */
-.cal-guard{font-size:7px;color:var(--accent2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;font-weight:600;}
+.cal-guard{font-size:11px;color:var(--accent2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px;font-weight:700;}
 /* ── LEAVE MANAGEMENT ── */
 .leave-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
 .leave-type-al{border-left:3px solid #dc2626;}
@@ -279,6 +279,21 @@ body.day-mode .b-blp,.day-mode .b-slp{background:rgba(79,70,229,.2);color:#3730a
 body.day-mode .pmf-row-unswapped{background:#fef2f2 !important;border-color:#f87171 !important;}
 body.day-mode .pmf-row-swapped{background:#f0fdf4 !important;border-color:#4ade80 !important;}
 body.day-mode .pmf-row-al{background:#f5f3ff !important;border-color:#7c3aed !important;}
+
+/* ── THEMED CHECKBOXES ── */
+input[type="checkbox"].themed-cb{
+  appearance:none;-webkit-appearance:none;
+  width:18px;height:18px;border-radius:4px;flex-shrink:0;
+  border:2px solid var(--border);background:var(--surface2);
+  cursor:pointer;position:relative;transition:all .15s;
+}
+input[type="checkbox"].themed-cb:checked{
+  background:var(--accent);border-color:var(--accent);
+}
+input[type="checkbox"].themed-cb:checked::after{
+  content:"✓";position:absolute;top:-1px;left:2px;
+  font-size:12px;font-weight:900;color:#000;
+}
 .swap-email-countdown{font-size:20px;font-weight:800;color:var(--accent);}
 /* ── CONTACT ACTIONS ── */
 .contact-actions{display:flex;gap:6px;}
@@ -1213,6 +1228,14 @@ function calcDur(s,e){
   const h=Math.floor((em-sm)/60),m=(em-sm)%60;
   return h+'h '+pad(m)+'m';
 }
+// Compact H:MM display format for calendar cells — display only
+function fmtDur(s,e){
+  let sm=parseTime(s),em=parseTime(e);
+  if(sm==null||em==null) return null;
+  if(em<sm) em+=1440;
+  const h=Math.floor((em-sm)/60),m=(em-sm)%60;
+  return h+':'+pad(m);
+}
 function calcHrs(s,e){
   let sm=parseTime(s),em=parseTime(e);
   if(sm==null||em==null) return null;
@@ -1407,14 +1430,20 @@ function renderDashShift(which){
   let ds=todayStr;
 
   if(which==='next'){
-    // Find next rostered working day (not BLP/SLP/leave) starting tomorrow
+    // Find next actual working day starting tomorrow
+    // Skip BLP/SLP only if no shift has been recorded on them
     for(let i=1;i<=14;i++){
       const candidate=fmtDate(addDays(now,i));
       const info=getShiftDisplayForDate(candidate);
-      if(!['blp','slp','al','lsl','sick','lwop','rdo'].includes(info.typeKey)){
-        ds=candidate;
-        break;
-      }
+      const ov=S.days[candidate];
+      const hasRecordedShift=ov&&ov.start; // user entered actual times
+      // Always skip leave/LWOP/RDO
+      if(['al','lsl','sick','lwop','rdo'].includes(info.typeKey)) continue;
+      // Skip BLP/SLP only when no actual shift recorded
+      if(['blp','slp'].includes(info.typeKey)&&!hasRecordedShift) continue;
+      // This day has work — use it
+      ds=candidate;
+      break;
     }
     if(ds===todayStr){ document.getElementById('dash-next-content').innerHTML='<div style="color:var(--muted);font-size:12px;">No shift in next 14 days</div>'; return; }
   }
@@ -1423,7 +1452,7 @@ function renderDashShift(which){
   const el=document.getElementById('dash-'+(which==='today'?'today':'next')+'-content');
   const d=parseDate(ds);
 
-  if(['blp','slp'].includes(info.typeKey)){
+  if(['blp','slp'].includes(info.typeKey)&&!info.start){
     el.innerHTML='<div style="font-size:13px;font-weight:700;color:var(--muted);">'+(info.typeKey==='blp'?'BLP':'SLP')+'</div><div style="font-size:10px;color:var(--muted);">Rest day</div>';
     return;
   }
@@ -1625,24 +1654,22 @@ function renderCalCell(d, otherMonth){
   if(hasWorkedOverride){
     const wStart=ovForCell.start;
     const wEnd=ovForCell.end||null;
-    const wDur=wStart&&wEnd?calcDur(wStart,wEnd):null;
-    const durShort=wDur?wDur.replace(' 0m',''):'';
+    const durDisp=wStart&&wEnd?fmtDur(wStart,wEnd):null;
     // If original roster was BLP/SLP, show the badge so it's still visible
     if(tk==='blp'||tk==='slp'){
       inner+='<div class="cal-badge '+(tk==='blp'?'b-blp':'b-slp')+'" style="margin-bottom:2px;">'+(tk==='blp'?'BLP':'SLP')+'</div>';
     }
     inner+='<div class="cal-time" style="'+timeColor(wStart)+';">'+wStart+'</div>';
-    if(durShort) inner+='<div style="font-size:10px;color:var(--muted);line-height:1.2;">('+durShort+')</div>';
+    if(durDisp) inner+='<div style="font-size:12px;color:var(--muted);line-height:1.3;">('+durDisp+')</div>';
     if(ovForCell.guards&&ovForCell.guards.trim()){
       inner+='<div class="cal-guard">'+ovForCell.guards.trim().split('\n')[0]+'</div>';
     }
   } else if((tk==='blp_worked'||tk==='slp_worked')&&sh.time&&sh.endTime){
-    const dur=calcDur(sh.time,sh.endTime);
-    const hrs=dur?'('+dur.replace(' 0m','')+')'  :'';
+    const durDisp=fmtDur(sh.time,sh.endTime);
     // Show badge first so BLP/SLP stays visible
     inner+='<div class="cal-badge '+(tk==='blp_worked'?'b-blp':'b-slp')+'" style="margin-bottom:2px;">'+(tk==='blp_worked'?'BLP':'SLP')+'</div>';
     inner+='<div class="cal-time" style="color:var(--early);">'+sh.time+'</div>';
-    if(hrs) inner+='<div style="font-size:10px;color:var(--muted);line-height:1.2;">'+hrs+'</div>';
+    if(durDisp) inner+='<div style="font-size:12px;color:var(--muted);line-height:1.3;">('+durDisp+')</div>';
     if(sh.guards&&sh.guards.trim()) inner+='<div class="cal-guard">'+sh.guards.trim().split('\n')[0]+'</div>';
   } else if(['al','lsl','afp','afa','blp','slp','sl','lwop','blp_worked','slp_worked'].includes(tk)){
     const labels={al:'AL',lsl:'LSL',afp:'AFP',afa:'AFA',blp:'BLP',slp:'SLP',sl:'SL',lwop:'LWOP',blp_worked:'BLP✓',slp_worked:'SLP✓'};
@@ -1672,8 +1699,8 @@ function renderCalCell(d, otherMonth){
     // Show start time + duration only — compact for cell
     inner+='<div class="cal-time" style="'+timeColor(sh.time)+';">'+sh.time+'</div>';
     if(sh.endTime){
-      const dur=calcDur(sh.time,sh.endTime);
-      if(dur) inner+='<div style="font-size:10px;color:var(--muted);line-height:1.2;">('+dur.replace(' 0m','')+')</div>';
+      const durDisp=fmtDur(sh.time,sh.endTime);
+      if(durDisp) inner+='<div style="font-size:12px;color:var(--muted);line-height:1.3;">('+durDisp+')</div>';
     }
     // Guard quick view
     const ovG=S.days[ds];
@@ -1713,10 +1740,35 @@ function initCalGrid(){
   const grid=document.getElementById('cal-grid');
   if(!grid||grid._calInited) return;
   grid._calInited=true;
+
+  // Tap to open day
   grid.addEventListener('click',function(e){
     const cell=e.target.closest('[data-ds]');
     if(cell) tapCalDay(cell.getAttribute('data-ds'));
   });
+
+  // Swipe left/right to navigate months
+  // Attach to the parent cal section so swipes anywhere on calendar work
+  const calSection=document.getElementById('screen-cal');
+  if(calSection&&!calSection._swipeInited){
+    calSection._swipeInited=true;
+    let touchStartX=0, touchStartY=0, touchStartTime=0;
+    calSection.addEventListener('touchstart',function(e){
+      touchStartX=e.touches[0].clientX;
+      touchStartY=e.touches[0].clientY;
+      touchStartTime=Date.now();
+    },{passive:true});
+    calSection.addEventListener('touchend',function(e){
+      const dx=e.changedTouches[0].clientX-touchStartX;
+      const dy=e.changedTouches[0].clientY-touchStartY;
+      const dt=Date.now()-touchStartTime;
+      // Only register as swipe if: fast (<400ms), horizontal dominant, and >40px
+      if(dt<400&&Math.abs(dx)>40&&Math.abs(dx)>Math.abs(dy)*1.5){
+        if(dx<0){ calNav(1); }  // swipe left = next month
+        else    { calNav(-1); } // swipe right = prev month
+      }
+    },{passive:true});
+  }
 }
 
 function tapCalDay(ds){
@@ -2305,65 +2357,94 @@ function renderPMFinder(){
 
   weekResults.forEach(function(r){
     const row=document.createElement('div');
-    // Card colour: green=swapped, purple=AL approved, red=not swapped
     const rowCls=r.allDaysAL?'pmf-row pmf-row-al':r.weekSwapped?'pmf-row pmf-row-swapped':'pmf-row pmf-row-unswapped';
     row.className=rowCls;
     row.style.cssText='flex-direction:column;align-items:stretch;cursor:default;';
 
     const wcDD=fmtDDMM(r.wc);
     const swapSent=r.weekSwapped&&r.wcSwapId&&S.swapEmailSent[r.wcSwapId];
+    const wcClickable='<span style="font-size:14px;font-weight:800;color:var(--accent);cursor:pointer;text-decoration:underline;text-decoration-style:dotted;" data-wcstr="'+r.wcStr+'" onclick="openCalendarToWeek(this.getAttribute('+"'data-wcstr'"+'\))">WC '+wcDD+'</span>';
 
-    // Status badge — AL approved / swapped / not swapped
-    let statusHtml;
-    if(r.allDaysAL){
-      statusHtml='<span style="font-size:10px;padding:2px 6px;border-radius:8px;background:#5b21b6;color:#ddd6fe;font-weight:700;">AL Approved</span>';
-    } else if(!r.weekSwapped){
-      statusHtml='<span class="pmf-not-swapped">Not Swapped</span>';
-    } else if(swapSent){
-      statusHtml='<span class="pmf-swapped">Email Sent ✓</span>';
-    } else {
-      statusHtml='<span class="pmf-swapped" style="background:#78350f;color:#fcd34d;">Swap Email Pending</span>';
+    // ── SWAPPED weeks: compact 1-2 line, expandable ─────────
+    if(r.weekSwapped){
+      const emailStatusTxt=swapSent?'Email Sent ✓':'Email Pending';
+      const emailStyle=swapSent?'color:#6ee7b7;':'color:#fcd34d;';
+
+      const cb=document.createElement('input');
+      cb.type='checkbox'; cb.className='pmf-cb pmf-select-cb themed-cb'; cb.dataset.pmfid=r.wcStr;
+      cb.onclick=function(e){ e.stopPropagation(); };
+
+      const summaryDiv=document.createElement('div');
+      summaryDiv.style.cssText='display:flex;align-items:flex-start;gap:8px;';
+
+      const infoDiv=document.createElement('div');
+      infoDiv.style.cssText='flex:1;min-width:0;';
+      // Line 1: WC · Link 261 → 355 · Driver
+      const line1Parts=['WC '+wcDD,'Link '+r.link+' → '+r.swapTo];
+      if(r.swapDriver) line1Parts.push(r.swapDriver);
+      // Line 2 (or append to line 1 if email sent): email status
+      infoDiv.innerHTML=
+        '<div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+
+          line1Parts.join(' • ')+
+        '</div>'+
+        '<div style="font-size:11px;margin-top:1px;'+emailStyle+'font-weight:600;">'+
+          emailStatusTxt+' <span style="color:var(--muted);font-weight:400;font-size:10px;">· tap to expand</span>'+
+        '</div>';
+
+      summaryDiv.appendChild(cb);
+      summaryDiv.appendChild(infoDiv);
+
+      // Expandable full grid
+      const expandDiv=document.createElement('div');
+      expandDiv.style.cssText='display:none;margin-top:10px;';
+      expandDiv.innerHTML=buildWeekGridHtml(r.link,r.days,r.wc);
+
+      let expanded=false;
+      row.style.cursor='pointer';
+      row.addEventListener('click',function(e){
+        if(e.target.type==='checkbox') return;
+        expanded=!expanded;
+        expandDiv.style.display=expanded?'block':'none';
+        const hint=infoDiv.querySelector('span');
+        if(hint) hint.textContent=expanded?'· tap to collapse':'· tap to expand';
+      });
+
+      row.appendChild(summaryDiv);
+      row.appendChild(expandDiv);
+      el.appendChild(row);
+      return;
     }
 
-    const markEmailBtn=(r.weekSwapped&&r.wcSwapId&&!swapSent)
-      ?'<button class="btn btn-sm" style="font-size:10px;padding:3px 8px;" data-pmfid="'+r.wcSwapId+'" onclick="markPMFEmail(this)">Mark Email Sent</button>'
-      :'';
+    // ── AL APPROVED weeks: compact summary ───────────────────
+    if(r.allDaysAL){
+      const alDiv=document.createElement('div');
+      alDiv.innerHTML=
+        wcClickable+
+        '<div style="font-size:12px;font-weight:700;margin-top:2px;">Link '+r.link+'</div>'+
+        '<div style="margin-top:4px;"><span style="font-size:10px;padding:2px 6px;border-radius:8px;background:#5b21b6;color:#ddd6fe;font-weight:700;">AL Approved</span></div>';
+      row.appendChild(alDiv);
+      el.appendChild(row);
+      return;
+    }
+
+    // ── UNSWAPPED weeks: full display ────────────────────────
+    const statusHtml='<span class="pmf-not-swapped">Not Swapped</span>';
+    const markEmailBtn=''; // not swapped, no email btn needed
 
     const headerDiv=document.createElement('div');
     headerDiv.style.cssText='display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px;';
-    // Checkbox for copy selection
     const cb=document.createElement('input');
-    cb.type='checkbox'; cb.className='pmf-cb pmf-select-cb'; cb.dataset.pmfid=r.wcStr;
+    cb.type='checkbox'; cb.className='pmf-cb pmf-select-cb themed-cb'; cb.dataset.pmfid=r.wcStr;
     headerDiv.appendChild(cb);
     const headerText=document.createElement('div');
     headerText.style.cssText='flex:1;';
-    // W/C date — clickable to open calendar
-    const wcClickable='<span style="font-size:14px;font-weight:800;color:var(--accent);cursor:pointer;text-decoration:underline;text-decoration-style:dotted;" data-wcstr="'+r.wcStr+'" onclick="openCalendarToWeek(this.getAttribute('+"'data-wcstr'"+'\))">WC '+wcDD+'</span>';
-    // Link display: rostered → swapped if applicable
-    const linkDisp=r.weekSwapped&&r.swapTo
-      ?'<div style="font-size:12px;font-weight:700;margin-top:3px;">Link '+r.link+' <span style="color:var(--accent2);">→</span> Link '+r.swapTo+'</div>'
-      :'<div style="font-size:12px;font-weight:700;margin-top:3px;">Link '+r.link+'</div>';
-    const driverDisp=r.weekSwapped&&r.swapDriver
-      ?'<div style="font-size:11px;color:var(--muted);margin-top:1px;">'+r.swapDriver+'</div>'
-      :'';
     headerText.innerHTML=
       '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+wcClickable+statusHtml+'</div>'+
-      linkDisp+
-      driverDisp+
-      (markEmailBtn?'<div style="margin-top:4px;">'+markEmailBtn+'</div>':'');
+      '<div style="font-size:12px;font-weight:700;margin-top:3px;">Link '+r.link+'</div>';
     headerDiv.appendChild(headerText);
 
-    // BLP/SLP warning below grid — use roster link data from this result row
     const myBlpSlp=countBlpSlp(r.link);
-    const theirBlpSlp=r.weekSwapped&&r.swapTo?countBlpSlp(r.swapTo):null;
-    const blpWarnHtml=theirBlpSlp!==null?(
-      (theirBlpSlp!==myBlpSlp)?
-        '<div style="margin-top:8px;padding:8px 10px;background:#78350f22;border:1px solid #f59e0b44;border-radius:6px;font-size:11px;">'+
-          '<span style="font-weight:700;color:var(--accent);">⚠ BLP/SLP Count Mismatch</span><br>'+
-          'Your Link: '+myBlpSlp+' days &nbsp;·&nbsp; Swap Link: '+theirBlpSlp+' days &nbsp;·&nbsp; Difference: '+((theirBlpSlp-myBlpSlp)>0?'+':'')+(theirBlpSlp-myBlpSlp)+
-        '</div>':
-        '<div style="margin-top:6px;font-size:11px;color:var(--early);">✓ BLP/SLP balanced ('+myBlpSlp+' each)</div>'
-    ):'';
+    const blpWarnHtml='';
 
     const gridDiv=document.createElement('div');
     gridDiv.innerHTML=buildWeekGridHtml(r.link,r.days,r.wc)+blpWarnHtml;
@@ -3131,7 +3212,7 @@ function renderContacts(){
     // Checkbox
     const cb=document.createElement('input');
     cb.type='checkbox';
-    cb.className='contact-cb';
+    cb.className='contact-cb themed-cb';
     cb.style.cssText='width:18px;height:18px;flex-shrink:0;cursor:pointer;';
     cb.dataset.cid=c.id;
     cb.addEventListener('change',function(){ onContactCheckChange(); });
