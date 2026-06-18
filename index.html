@@ -275,8 +275,10 @@ body.day-mode .b-blp,.day-mode .b-slp{background:rgba(79,70,229,.2);color:#3730a
 .pmf-swapped{background:#14532d;color:#6ee7b7;font-size:10px;padding:2px 6px;border-radius:8px;font-weight:700;}
 .pmf-row-unswapped{background:#450a0a !important;border-color:#991b1b !important;}
 .pmf-row-swapped{background:#052e16 !important;border-color:#166534 !important;}
+.pmf-row-al{background:#2e1065 !important;border-color:#7c3aed !important;}
 body.day-mode .pmf-row-unswapped{background:#fef2f2 !important;border-color:#f87171 !important;}
 body.day-mode .pmf-row-swapped{background:#f0fdf4 !important;border-color:#4ade80 !important;}
+body.day-mode .pmf-row-al{background:#f5f3ff !important;border-color:#7c3aed !important;}
 .swap-email-countdown{font-size:20px;font-weight:800;color:var(--accent);}
 /* ── CONTACT ACTIONS ── */
 .contact-actions{display:flex;gap:6px;}
@@ -1601,6 +1603,9 @@ function renderCalCell(d, otherMonth){
   if(isSwapOv) cls+=' modified'; // blue border only for swaps, not edits
   if(isPH) cls+=' c-ph';
 
+  const ovForCell=S.days[ds];
+  const hasWorkedOverride=ovForCell&&(!ovForCell.type||ovForCell.type==='normal')&&ovForCell.start;
+
   // Background colour class
   if(tk==='al') cls+=' c-al';
   else if(tk==='lsl') cls+=' c-lsl';
@@ -1609,13 +1614,14 @@ function renderCalCell(d, otherMonth){
   else if(tk==='slp') cls+=' c-slp';
   else if(tk==='swap') cls+=' c-swap';
   else if(tk==='sl') cls+=' c-sl';
+  // Keep BLP/SLP background even when worked (hasWorkedOverride on a BLP day)
+  if(hasWorkedOverride&&(tk==='blp'||tk==='blp_worked')) cls+=' c-blp';
+  if(hasWorkedOverride&&(tk==='slp'||tk==='slp_worked')) cls+=' c-slp';
 
   let inner='<div class="cal-day-num">'+d.getDate()+'</div>';
 
   // ── PRIORITY: if override has a start time, always show as worked shift ──
   // This handles: editing a BLP day, editing a spare AM/PM day, etc.
-  const ovForCell=S.days[ds];
-  const hasWorkedOverride=ovForCell&&(!ovForCell.type||ovForCell.type==='normal')&&ovForCell.start;
   if(hasWorkedOverride){
     const wStart=ovForCell.start;
     const wEnd=ovForCell.end||null;
@@ -1632,9 +1638,12 @@ function renderCalCell(d, otherMonth){
     }
   } else if((tk==='blp_worked'||tk==='slp_worked')&&sh.time&&sh.endTime){
     const dur=calcDur(sh.time,sh.endTime);
-    const hrs=dur?'('+dur.replace(' 0m','').replace('h','h').replace('m','m')+')':'';
-    inner+='<div class="cal-time" style="color:var(--early);font-size:11px;">'+sh.time+'–'+sh.endTime+' '+hrs+'</div>';
-    inner+='<div class="cal-code">'+(tk==='blp_worked'?'BLP✓':'SLP✓')+'</div>';
+    const hrs=dur?'('+dur.replace(' 0m','')+')'  :'';
+    // Show badge first so BLP/SLP stays visible
+    inner+='<div class="cal-badge '+(tk==='blp_worked'?'b-blp':'b-slp')+'" style="margin-bottom:2px;">'+(tk==='blp_worked'?'BLP':'SLP')+'</div>';
+    inner+='<div class="cal-time" style="color:var(--early);">'+sh.time+'</div>';
+    if(hrs) inner+='<div style="font-size:10px;color:var(--muted);line-height:1.2;">'+hrs+'</div>';
+    if(sh.guards&&sh.guards.trim()) inner+='<div class="cal-guard">'+sh.guards.trim().split('\n')[0]+'</div>';
   } else if(['al','lsl','afp','afa','blp','slp','sl','lwop','blp_worked','slp_worked'].includes(tk)){
     const labels={al:'AL',lsl:'LSL',afp:'AFP',afa:'AFA',blp:'BLP',slp:'SLP',sl:'SL',lwop:'LWOP',blp_worked:'BLP✓',slp_worked:'SLP✓'};
     const bcls={al:'b-al',lsl:'b-lsl',afp:'b-afp',afa:'b-afa',blp:'b-blp',slp:'b-slp',sl:'b-sl',lwop:'b-al',blp_worked:'b-am1',slp_worked:'b-slp'};
@@ -2267,7 +2276,18 @@ function renderPMFinder(){
       });
       if(pmDays.length>0){
         const wcSwap=S.swaps.find(function(sw){ return sw.wc===fmtDate(wc)&&sw.scope==='week'; });
-        weekResults.push({wc:wc,wcStr:fmtDate(wc),link:link,days:days,pmDays:pmDays,weekSwapped:!!wcSwap,swapTo:wcSwap?wcSwap.linkReceived:null,wcSwapId:wcSwap?wcSwap.id:null,swapDriver:wcSwap?wcSwap.driver:null});
+        // Check if entire week (all 7 days) is covered by AL planned leave
+        const allDaysAL=(function(){
+          for(var di=0;di<7;di++){
+            var dayDs=fmtDate(addDays(wc,di));
+            var hasAL=(S.plannedLeave||[]).some(function(lv){
+              return lv.type==='al'&&dayDs>=lv.start&&dayDs<=(lv.end||lv.start);
+            });
+            if(!hasAL) return false;
+          }
+          return true;
+        })();
+        weekResults.push({wc:wc,wcStr:fmtDate(wc),link:link,days:days,pmDays:pmDays,weekSwapped:!!wcSwap,swapTo:wcSwap?wcSwap.linkReceived:null,wcSwapId:wcSwap?wcSwap.id:null,swapDriver:wcSwap?wcSwap.driver:null,allDaysAL:allDaysAL});
       }
     }
     cur=addDays(cur,7);
@@ -2285,15 +2305,19 @@ function renderPMFinder(){
 
   weekResults.forEach(function(r){
     const row=document.createElement('div');
-    row.className='pmf-row '+(r.weekSwapped?'pmf-row-swapped':'pmf-row-unswapped');
+    // Card colour: green=swapped, purple=AL approved, red=not swapped
+    const rowCls=r.allDaysAL?'pmf-row pmf-row-al':r.weekSwapped?'pmf-row pmf-row-swapped':'pmf-row pmf-row-unswapped';
+    row.className=rowCls;
     row.style.cssText='flex-direction:column;align-items:stretch;cursor:default;';
 
     const wcDD=fmtDDMM(r.wc);
     const swapSent=r.weekSwapped&&r.wcSwapId&&S.swapEmailSent[r.wcSwapId];
 
-    // Status badge — clear contrast: blue=not swapped, green=swapped
+    // Status badge — AL approved / swapped / not swapped
     let statusHtml;
-    if(!r.weekSwapped){
+    if(r.allDaysAL){
+      statusHtml='<span style="font-size:10px;padding:2px 6px;border-radius:8px;background:#5b21b6;color:#ddd6fe;font-weight:700;">AL Approved</span>';
+    } else if(!r.weekSwapped){
       statusHtml='<span class="pmf-not-swapped">Not Swapped</span>';
     } else if(swapSent){
       statusHtml='<span class="pmf-swapped">Email Sent ✓</span>';
