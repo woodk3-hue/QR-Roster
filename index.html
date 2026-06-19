@@ -2328,18 +2328,34 @@ function renderPMFinder(){
       });
       if(pmDays.length>0){
         const wcSwap=S.swaps.find(function(sw){ return sw.wc===fmtDate(wc)&&sw.scope==='week'; });
-        // Check if entire week (all 7 days) is covered by AL planned leave
-        const allDaysAL=(function(){
-          for(var di=0;di<7;di++){
-            var dayDs=fmtDate(addDays(wc,di));
-            var hasAL=(S.plannedLeave||[]).some(function(lv){
-              return lv.type==='al'&&dayDs>=lv.start&&dayDs<=(lv.end||lv.start);
-            });
-            if(!hasAL) return false;
-          }
-          return true;
-        })();
-        weekResults.push({wc:wc,wcStr:fmtDate(wc),link:link,days:days,pmDays:pmDays,weekSwapped:!!wcSwap,swapTo:wcSwap?wcSwap.linkReceived:null,wcSwapId:wcSwap?wcSwap.id:null,swapDriver:wcSwap?wcSwap.driver:null,allDaysAL:allDaysAL});
+        // Determine leave type for each day in the week (al/lsl/null)
+        const dayLeaveTypes=[];
+        for(var di=0;di<7;di++){
+          var dayDs=fmtDate(addDays(wc,di));
+          var lvMatch=(S.plannedLeave||[]).find(function(lv){
+            return (lv.type==='al'||lv.type==='lsl')&&dayDs>=lv.start&&dayDs<=(lv.end||lv.start);
+          });
+          dayLeaveTypes.push(lvMatch?lvMatch.type:null);
+        }
+        const leaveDayCount=dayLeaveTypes.filter(function(t){ return t!==null; }).length;
+        // Full week = all 7 days are the SAME leave type
+        const fullWeekType=(leaveDayCount===7&&dayLeaveTypes.every(function(t){ return t===dayLeaveTypes[0]; }))?dayLeaveTypes[0]:null;
+        // Partial = 4+ days on leave (not enough working days left to be worth swapping)
+        // Fewer than 4 leave days = treat as normal swappable week
+        const isPartialLeave=leaveDayCount>=4&&leaveDayCount<7;
+        // Dominant leave type for partial (first one found)
+        const partialLeaveType=isPartialLeave?dayLeaveTypes.find(function(t){ return t!==null; }):null;
+
+        weekResults.push({
+          wc:wc,wcStr:fmtDate(wc),link:link,days:days,pmDays:pmDays,
+          weekSwapped:!!wcSwap,swapTo:wcSwap?wcSwap.linkReceived:null,
+          wcSwapId:wcSwap?wcSwap.id:null,swapDriver:wcSwap?wcSwap.driver:null,
+          allDaysAL:fullWeekType==='al', // kept for backward compat (purple full-week AL)
+          fullWeekLeaveType:fullWeekType,
+          isPartialLeave:isPartialLeave,
+          partialLeaveType:partialLeaveType,
+          dayLeaveTypes:dayLeaveTypes
+        });
       }
     }
     cur=addDays(cur,7);
@@ -2357,13 +2373,81 @@ function renderPMFinder(){
 
   weekResults.forEach(function(r){
     const row=document.createElement('div');
-    const rowCls=r.allDaysAL?'pmf-row pmf-row-al':r.weekSwapped?'pmf-row pmf-row-swapped':'pmf-row pmf-row-unswapped';
+    const rowCls=(r.fullWeekLeaveType||r.isPartialLeave)?'pmf-row pmf-row-al':r.weekSwapped?'pmf-row pmf-row-swapped':'pmf-row pmf-row-unswapped';
     row.className=rowCls;
     row.style.cssText='flex-direction:column;align-items:stretch;cursor:default;';
 
     const wcDD=fmtDDMM(r.wc);
     const swapSent=r.weekSwapped&&r.wcSwapId&&S.swapEmailSent[r.wcSwapId];
     const wcClickable='<span style="font-size:14px;font-weight:800;color:var(--accent);cursor:pointer;text-decoration:underline;text-decoration-style:dotted;" data-wcstr="'+r.wcStr+'" onclick="openCalendarToWeek(this.getAttribute('+"'data-wcstr'"+'\))">WC '+wcDD+'</span>';
+    const leaveLabel={al:'AL',lsl:'LSL'};
+
+    // ── FULL WEEK LEAVE (AL or LSL, all 7 days) — simplest collapse ──
+    if(r.fullWeekLeaveType){
+      const fwDiv=document.createElement('div');
+      fwDiv.innerHTML=
+        wcClickable+
+        '<div style="font-size:12px;font-weight:700;margin-top:2px;">Link '+r.link+'</div>'+
+        '<div style="margin-top:4px;"><span style="font-size:10px;padding:2px 6px;border-radius:8px;background:#5b21b6;color:#ddd6fe;font-weight:700;">'+leaveLabel[r.fullWeekLeaveType]+' Full Week</span></div>';
+      row.appendChild(fwDiv);
+      el.appendChild(row);
+      return;
+    }
+
+    // ── PARTIAL LEAVE WEEK (4-6 days AL/LSL, some days working) ──
+    if(r.isPartialLeave){
+      // Find days NOT on leave that have a roster shift (i.e. working days)
+      const workedDays=[];
+      for(var di=0;di<7;di++){
+        if(r.dayLeaveTypes[di]) continue; // skip leave days
+        var dayDs=fmtDate(addDays(r.wc,di));
+        var ov=S.days[dayDs];
+        var daySh=parseShift(r.days[di]);
+        var isRestDay=daySh.typeKey==='blp'||daySh.typeKey==='slp';
+        if(!isRestDay){
+          var workTime=(ov&&ov.start)?ov.start:daySh.time;
+          if(workTime) workedDays.push(DAY3[di].slice(0,3).toUpperCase()+' '+workTime);
+        }
+      }
+
+      const cb=document.createElement('input');
+      cb.type='checkbox'; cb.className='pmf-cb pmf-select-cb themed-cb'; cb.dataset.pmfid=r.wcStr;
+      cb.onclick=function(e){ e.stopPropagation(); };
+
+      const summaryDiv=document.createElement('div');
+      summaryDiv.style.cssText='display:flex;align-items:flex-start;gap:8px;';
+
+      const infoDiv=document.createElement('div');
+      infoDiv.style.cssText='flex:1;min-width:0;';
+      infoDiv.innerHTML=
+        '<div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+
+          'WC '+wcDD+' · Link '+r.link+' · Not Swapped · Partial '+leaveLabel[r.partialLeaveType]+
+        '</div>'+
+        (workedDays.length?'<div style="font-size:11px;color:var(--accent2);margin-top:1px;">Working '+workedDays.join(' ')+' <span style="font-size:10px;color:var(--muted);">· tap to expand</span></div>':'');
+
+      summaryDiv.appendChild(cb);
+      summaryDiv.appendChild(infoDiv);
+
+      // Expandable full grid
+      const expandDiv=document.createElement('div');
+      expandDiv.style.cssText='display:none;margin-top:10px;';
+      expandDiv.innerHTML=buildWeekGridHtml(r.link,r.days,r.wc);
+
+      let expanded=false;
+      row.style.cursor='pointer';
+      row.addEventListener('click',function(e){
+        if(e.target.type==='checkbox') return;
+        expanded=!expanded;
+        expandDiv.style.display=expanded?'block':'none';
+        const hint=infoDiv.querySelector('span');
+        if(hint) hint.textContent=expanded?'· tap to collapse':'· tap to expand';
+      });
+
+      row.appendChild(summaryDiv);
+      row.appendChild(expandDiv);
+      el.appendChild(row);
+      return;
+    }
 
     // ── SWAPPED weeks: compact 1-2 line, expandable ─────────
     if(r.weekSwapped){
@@ -2394,10 +2478,11 @@ function renderPMFinder(){
       summaryDiv.appendChild(cb);
       summaryDiv.appendChild(infoDiv);
 
-      // Expandable full grid
+      // Expandable: original link grid + swapped link's shifts underneath
       const expandDiv=document.createElement('div');
       expandDiv.style.cssText='display:none;margin-top:10px;';
-      expandDiv.innerHTML=buildWeekGridHtml(r.link,r.days,r.wc);
+      const swappedDays=ROSTER[String(r.swapTo)]||[];
+      expandDiv.innerHTML=buildWeekGridHtml(r.link,r.days,r.wc)+buildSwappedRowHtml(r.swapTo,swappedDays,r.wc);
 
       let expanded=false;
       row.style.cursor='pointer';
@@ -2411,18 +2496,6 @@ function renderPMFinder(){
 
       row.appendChild(summaryDiv);
       row.appendChild(expandDiv);
-      el.appendChild(row);
-      return;
-    }
-
-    // ── AL APPROVED weeks: compact summary ───────────────────
-    if(r.allDaysAL){
-      const alDiv=document.createElement('div');
-      alDiv.innerHTML=
-        wcClickable+
-        '<div style="font-size:12px;font-weight:700;margin-top:2px;">Link '+r.link+'</div>'+
-        '<div style="margin-top:4px;"><span style="font-size:10px;padding:2px 6px;border-radius:8px;background:#5b21b6;color:#ddd6fe;font-weight:700;">AL Approved</span></div>';
-      row.appendChild(alDiv);
       el.appendChild(row);
       return;
     }
@@ -2510,7 +2583,35 @@ function buildWeekGridHtml(link, days, wc){
   return html;
 }
 
-// ── PMF COPY HELPERS ─────────────────────────────────────
+// Builds a standalone single-row table showing the SWAPPED link's shifts,
+// to be displayed underneath the original link's grid when a swapped
+// PM Finder card is expanded.
+function buildSwappedRowHtml(swapLink, swapDays, wc){
+  if(!swapLink||!swapDays||!swapDays.length) return '';
+  var html='<div style="margin-top:6px;font-size:10px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.05em;">Swapped To — Link '+swapLink+'</div>';
+  html+='<div class="sg-scroll"><table class="swap-grid">';
+  html+='<tbody><tr>';
+  html+='<td class="sg-link">'+swapLink+'</td>';
+  swapDays.forEach(function(raw,i){
+    var sh=parseShift(raw);
+    var tk=sh.typeKey;
+    var cls='sg-cell ';
+    if(tk==='blp'||tk==='slp') cls+='sg-blp';
+    else if(tk==='afa'||tk==='afp') cls+='sg-afa';
+    else if(['am1','am2','am3'].includes(tk)) cls+='sg-am';
+    else if(['pm1','pm2','pm3'].includes(tk)) cls+='sg-pm';
+    else cls+='sg-normal';
+    var mins=parseTime(sh.time);
+    var isPM=(['pm1','pm2','pm3'].includes(tk))||(mins!==null&&mins>=720&&tk==='normal');
+    if(isPM) cls+=' sg-diff';
+    var lbl=sh.time?sh.time:sh.code;
+    html+='<td><span class="'+cls+'">'+lbl+'</span></td>';
+  });
+  html+='</tr></tbody></table></div>';
+  return html;
+}
+
+
 let pmfResults=[];
 
 function selectAllPMF(){
@@ -2527,9 +2628,13 @@ function copySelectedPMF(){
   const selected=pmfResults.filter(function(r){ return selectedIds.includes(r.wcStr); });
   const lines=selected.map(function(r){
     const wcDD=fmtDDMM(r.wc);
-    // Find which days are PM
-    const pmDayNames=r.pmDays.map(function(p){ return DAY3[p.dayIdx]; });
-    const dayRange=pmDayNames.length>0?pmDayNames[0]+(pmDayNames.length>1?'/'+pmDayNames[pmDayNames.length-1]:''):'';
+    // Find BLP/SLP days from actual roster for the day-range label
+    const blpDayNames=[];
+    r.days.forEach(function(raw,i){
+      const sh=parseShift(raw);
+      if(sh.typeKey==='blp'||sh.typeKey==='slp') blpDayNames.push(DAY3[i]);
+    });
+    const dayRange=blpDayNames.length>0?blpDayNames[0]+(blpDayNames.length>1?'/'+blpDayNames[blpDayNames.length-1]:''):'';
     // Build horizontal shift row
     const shiftRow=r.days.map(function(raw,i){
       var sh=parseShift(raw);
